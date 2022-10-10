@@ -20,7 +20,6 @@ export default function TestTable(props) {
       },
     }).then((response) => {
       setApplicants(response.data.applicants);
-      console.log(applicants)
     });
   }, []);
 

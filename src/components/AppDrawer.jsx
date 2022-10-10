@@ -6,22 +6,28 @@ import Typography from "@mui/material/Typography";
 import { Box } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { useSelector, useDispatch } from "react-redux";
-import { toggled } from "../app/features/drawerSlice";
+import { fetchRounds, toggled } from "../app/features/drawerSlice";
 import { List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import { selectedRoundChanged } from "../app/features/seasonSlice";
-import { Button } from '@mui/material'
+import { Button } from "@mui/material";
 import { Modal } from "@mui/material";
+import { TextField } from "@mui/material";
+import { MenuItem } from "@mui/material";
+import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
   width: 400,
-  bgcolor: 'background.paper',
-  border: '2px solid #000',
+  bgcolor: "background.paper",
+  border: "1px solid #000",
   boxShadow: 24,
   p: 4,
+  borderRadius: `10px`,
 };
 
 const useStyles = makeStyles((theme) => ({
@@ -30,10 +36,23 @@ const useStyles = makeStyles((theme) => ({
   },
   addRoundBtnContainer: {
     position: `absolute`,
-    bottom: `10px`,
+    bottom: `20px`,
     width: `100%`,
     display: `flex`,
     justifyContent: `center`,
+  },
+  inputRoundName: {
+    width: `100%`,
+    marginTop: `10px !important`,
+  },
+  inputRoundType: {
+    width: `100%`,
+    marginTop: `10px !important`,
+  },
+  createRoundBtnContainer: {
+    display: `flex`,
+    justifyContent: `flex-end`,
+    marginTop: `15px`,
   },
 }));
 
@@ -43,14 +62,63 @@ function AppDrawer(props) {
   const { window } = props;
   const dispatch = useDispatch();
   const isDrawerVisible = useSelector((state) => state.drawer.drawerVisible);
-  const [open, setOpen] = React.useState(false)
+  const isLoading = useSelector((state) => state.drawer.loading);
+  const [open, setOpen] = React.useState(false);
+  const [option, setOption] = React.useState("T");
+
+  const showRoundSuccessToast = () => {
+    toast.success("Round Created", {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "light",
+    });
+  };
 
   const classes = useStyles();
-  const { appBar, addRoundBtnContainer } = classes;
+  const {
+    appBar,
+    addRoundBtnContainer,
+    inputRoundName,
+    inputRoundType,
+    createRoundBtnContainer,
+  } = classes;
 
   const isRoundsListVisible = useSelector(
     (state) => state.drawer.roundsVisible
   );
+
+  const handleChange = (event) => {
+    setOption(event.target.value);
+  };
+
+  const selectedSeasonId = useSelector(
+    (state) => state.drawer.selectedSeasonId
+  );
+
+  const handleCreateRound = () => {
+    const roundName = document.getElementById("input-round-name").value;
+    axios({
+      method: "post",
+      url: `http://localhost:8000/api/roundDetails/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+      data: {
+        round_name: roundName,
+        round_type: option,
+        season: selectedSeasonId,
+      },
+    }).then((response) => {
+      showRoundSuccessToast();
+      setOpen(false);
+      dispatch(fetchRounds());
+    });
+  };
 
   const rounds = useSelector((state) => state.drawer.rounds);
 
@@ -60,11 +128,13 @@ function AppDrawer(props) {
         <>
           {rounds.map((round) => (
             <ListItem key={round.id} disablePadding>
-              <ListItemButton onClick={() => dispatch(selectedRoundChanged(round))}>
+              <ListItemButton
+                onClick={() => dispatch(selectedRoundChanged(round))}
+              >
                 <ListItemText primary={round.round_name} />
               </ListItemButton>
-            </ListItem>)
-          )}
+            </ListItem>
+          ))}
         </>
       ) : (
         <Typography align="center">Nothing here.</Typography>
@@ -74,9 +144,11 @@ function AppDrawer(props) {
 
   const addRoundBtn = (
     <div className={addRoundBtnContainer}>
-      <Button variant="contained" onClick={() => setOpen(true)}>+ Add Round</Button>
+      <Button variant="contained" onClick={() => setOpen(true)}>
+        + Add Round
+      </Button>
     </div>
-  )
+  );
 
   const drawer = (
     <div>
@@ -91,13 +163,25 @@ function AppDrawer(props) {
         <Typography variant="h6">NEXUS</Typography>
       </Box>
       <Divider />
-      { isRoundsListVisible ? roundsList : <></>}
-      { isRoundsListVisible ? addRoundBtn : <></>}
+      {isLoading && <Typography>Loading</Typography>}
+      {isRoundsListVisible ? roundsList : <></>}
+      {isRoundsListVisible ? addRoundBtn : <></>}
     </div>
   );
 
   const container =
     window !== undefined ? () => window().document.body : undefined;
+
+  const roundTypes = [
+    {
+      label: "Test",
+      value: "T",
+    },
+    {
+      label: "Interview",
+      value: "I",
+    },
+  ];
 
   return (
     <>
@@ -140,13 +224,49 @@ function AppDrawer(props) {
       >
         <Box sx={style}>
           <Typography id="modal-modal-title" variant="h6" component="h2">
-            Text in a modal
+            Adding Round
           </Typography>
-          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
-          </Typography>
+          <TextField
+            id="input-round-name"
+            label="Round Name"
+            variant="filled"
+            className={inputRoundName}
+          />
+          <TextField
+            id="input-round-type"
+            select
+            label="Select Round Type"
+            value={option}
+            onChange={handleChange}
+            helperText="Please select the round type."
+            variant="filled"
+            className={inputRoundType}
+          >
+            {roundTypes.map((roundType) => (
+              <MenuItem key={roundType.value} value={roundType.value}>
+                {roundType.label}
+              </MenuItem>
+            ))}
+          </TextField>
+          <div className={createRoundBtnContainer}>
+            <Button variant="contained" onClick={handleCreateRound}>
+              Create
+            </Button>
+          </div>
         </Box>
       </Modal>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </>
   );
 }
