@@ -6,6 +6,7 @@ import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
 import { makeStyles } from "@mui/styles";
 import TestTable from "../components/TestTable";
+import { Button } from "@mui/material";
 
 const useStyles = makeStyles({
   testContainer: {
@@ -14,11 +15,18 @@ const useStyles = makeStyles({
     paddingTop: `10px`,
     width: `100%`,
   },
+  footer:{
+    bottom: `0px`,
+    display: `flex`,
+    padding: `10px`,
+    position: `fixed`,
+    marginBottom: `10px`,
+  },
 });
 
 export default function Test(props) {
   const [value, setValue] = useState("1");
-  const { testContainer } = useStyles();
+  const { testContainer, footer } = useStyles();
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -48,6 +56,9 @@ export default function Test(props) {
           </Box>
           {testPanels}
         </TabContext>
+      <div className={footer}>
+        <Button variant="contained">View Questions and Assignees</Button>
+      </div>
       </div>
   );
 }

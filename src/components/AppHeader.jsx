@@ -1,4 +1,3 @@
-import React from "react";
 import { AppBar } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import Toolbar from "@mui/material/Toolbar";
@@ -7,6 +6,8 @@ import IconButton from "@mui/material/IconButton";
 import { makeStyles } from "@mui/styles";
 import { useDispatch, useSelector } from "react-redux";
 import { toggled } from "../app/features/drawerSlice";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const useStyles = makeStyles((theme) => ({
   typography: {
@@ -20,6 +21,7 @@ export default function AppHeader() {
   const { typography } = classes;
   const dispatch = useDispatch()
   const title = useSelector(state => state.appBar.title)
+  let isAuthenticated = (localStorage.getItem("token") !== null)
 
   return (
     <AppBar

@@ -131,7 +131,7 @@ function AppDrawer(props) {
               <ListItemButton
                 onClick={() => dispatch(selectedRoundChanged(round))}
               >
-                <ListItemText primary={round.round_name} />
+                <ListItemText primary={round.round_name.length>25 ? round.round_name.substr(0, 25) + "..." : round.round_name} />
               </ListItemButton>
             </ListItem>
           ))}
