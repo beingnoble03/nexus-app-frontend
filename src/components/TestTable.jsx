@@ -81,7 +81,7 @@ export default function TestTable(props) {
     setAnchorEl(null);
   };
 
-  const openPopover = Boolean(anchorEl)
+  const openPopover = Boolean(anchorEl);
 
   const handleTableRowClick = (applicantId) => {
     axios({
@@ -179,6 +179,143 @@ export default function TestTable(props) {
     });
   }, []);
 
+  const testScoreModal = (
+    <Modal
+      open={open}
+      onClose={() => setOpen(false)}
+      aria-labelledby="modal-modal-title"
+      aria-describedby="modal-modal-description"
+      sx={{
+        maxHeight: `100%`,
+      }}
+    >
+      <Box sx={style}>
+        <Typography id="modal-modal-title" variant="h5" component="h2">
+          <b>Questions</b> {testScore && testScore.test_details.title}
+        </Typography>
+        <div className={applicantDetialsContainer}>
+          <Typography variant="h6">Applicant Details</Typography>
+          <Typography variant="subtitle1">
+            <b>Name </b>
+            {testScore && testScore.applicant_details.name}
+          </Typography>
+          <Typography variant="subtitle2">
+            <b>Enrolment Number </b>
+            {testScore && testScore.applicant_details.enrolment_number}
+          </Typography>
+        </div>
+        {testScore &&
+          testScore.sections.map((section, index) => (
+            <div className={sectionContentContainer} key={index}>
+              <Typography variant="h6" key={"typography-1-" + String(index)}>
+                <b>Section </b>
+                {section.title}
+              </Typography>
+              {section.questions.map((question, questionIndex) => (
+                <>
+                  <Typography
+                    key={"typography-2-" + String(questionIndex)}
+                    variant="subtitle1"
+                  >
+                    <b>Question </b>
+                    {question.title}{" "}
+                  </Typography>
+                  <Typography
+                    varient="subtitle2"
+                    key={"typography-3-" + String(questionIndex)}
+                  >
+                    <b>Maximum Marks </b>
+                    {question.maximum_marks}{" "}
+                  </Typography>
+                  <TextField
+                    id={"input-marks-" + String(question.id)}
+                    label={
+                      question.obtained_marks
+                        ? "Obtained Marks [EVALUATED BEFORE]"
+                        : "Obtained Marks"
+                    }
+                    color={question.obtained_marks ? "error" : "primary"}
+                    variant="filled"
+                    key={questionIndex}
+                    className={inputTestModal}
+                    defaultValue={
+                      question.obtained_marks
+                        ? String(question.obtained_marks)
+                        : ""
+                    }
+                    type="number"
+                  />
+                  <TextField
+                    id={"input-remarks-" + String(question.id)}
+                    label={"Remarks"}
+                    color={question.obtained_marks ? "error" : "primary"}
+                    variant="filled"
+                    key={"text-field-2-" + String(questionIndex)}
+                    className={inputTestModal}
+                    defaultValue={question.remarks ? question.remarks : ""}
+                  />
+                  <Typography
+                    varient="subtitle2"
+                    key={"typography-6-" + String(questionIndex)}
+                    className={assigneeTypography}
+                  >
+                    <b>Assignees</b>
+                  </Typography>
+                  {question.assignee.length ? (
+                    question.assignee.map((member, index) => (
+                      <>
+                        <img
+                          className={assigneeImage}
+                          src={member.image}
+                          key={"assignee-image-" + String(index)}
+                          onMouseEnter={handlePopoverOpen}
+                          onMouseLeave={handlePopoverClose}
+                        />
+                        <Popover
+                          id="mouse-over-popover"
+                          sx={{
+                            pointerEvents: "none",
+                          }}
+                          open={openPopover}
+                          anchorEl={anchorEl}
+                          anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "center",
+                          }}
+                          transformOrigin={{
+                            vertical: "top",
+                            horizontal: "center",
+                          }}
+                          key={"popover-1-" + String(questionIndex)}
+                          onClose={handlePopoverClose}
+                          disableRestoreFocus
+                        >
+                          <Typography
+                            sx={{ p: 1 }}
+                            key={"typography-8-" + String(questionIndex)}
+                          >
+                            {member.name}
+                          </Typography>
+                        </Popover>
+                      </>
+                    ))
+                  ) : (
+                    <>No member assigned</>
+                  )}
+                  <hr />
+                </>
+              ))}
+            </div>
+          ))}
+        <div className={createRoundBtnContainer}>
+          <Button variant="contained" onClick={() => handleSaveBtnClick()}>
+            Save
+          </Button>
+        </div>
+      </Box>
+    </Modal>
+  );
+
   return (
     <>
       <TableContainer>
@@ -221,135 +358,7 @@ export default function TestTable(props) {
           </TableBody>
         </Table>
       </TableContainer>
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-        sx={{
-          maxHeight: `100%`,
-        }}
-      >
-        <Box sx={style}>
-          <Typography id="modal-modal-title" variant="h5" component="h2">
-            <b>Questions</b> {testScore && testScore.test_details.title}
-          </Typography>
-          <div className={applicantDetialsContainer}>
-            <Typography variant="h6">Applicant Details</Typography>
-            <Typography variant="subtitle1">
-              <b>Name </b>
-              {testScore && testScore.applicant_details.name}
-            </Typography>
-            <Typography variant="subtitle2">
-              <b>Enrolment Number </b>
-              {testScore && testScore.applicant_details.enrolment_number}
-            </Typography>
-          </div>
-          {testScore &&
-            testScore.sections.map((section, index) => (
-              <div className={sectionContentContainer} key={index}>
-                <Typography variant="h6" key={"typography-1-" + String(index)}>
-                  <b>Section </b>
-                  {section.title}
-                </Typography>
-                {section.questions.map((question, questionIndex) => (
-                  <>
-                    <Typography
-                      key={"typography-2-" + String(questionIndex)}
-                      variant="subtitle1"
-                    >
-                      <b>Question </b>
-                      {question.title}{" "}
-                    </Typography>
-                    <Typography
-                      varient="subtitle2"
-                      key={"typography-3-" + String(questionIndex)}
-                    >
-                      <b>Maximum Marks </b>
-                      {question.maximum_marks}{" "}
-                    </Typography>
-                    <TextField
-                      id={"input-marks-" + String(question.id)}
-                      label={
-                        question.obtained_marks
-                          ? "Obtained Marks [EVALUATED BEFORE]"
-                          : "Obtained Marks"
-                      }
-                      color={question.obtained_marks ? "error" : "primary"}
-                      variant="filled"
-                      key={questionIndex}
-                      className={inputTestModal}
-                      defaultValue={
-                        question.obtained_marks
-                          ? String(question.obtained_marks)
-                          : ""
-                      }
-                      type="number"
-                    />
-                    <TextField
-                      id={"input-remarks-" + String(question.id)}
-                      label={"Remarks"}
-                      color={question.obtained_marks ? "error" : "primary"}
-                      variant="filled"
-                      key={"text-field-2-" + String(questionIndex)}
-                      className={inputTestModal}
-                      defaultValue={question.remarks ? question.remarks : ""}
-                    />
-                    <Typography
-                      varient="subtitle2"
-                      key={"typography-6-" + String(questionIndex)}
-                      className={assigneeTypography}
-                    >
-                      <b>Assignees</b>
-                    </Typography>
-                    {question.assignee.length ? (
-                      question.assignee.map((member, index) => (
-                        <>
-                          <img
-                            className={assigneeImage}
-                            src={member.image}
-                            key={"assignee-image-" + String(index)}
-                            onMouseEnter={handlePopoverOpen}
-                            onMouseLeave={handlePopoverClose}
-                          />
-                          <Popover
-                            id="mouse-over-popover"
-                            sx={{
-                              pointerEvents: "none",
-                            }}
-                            open={openPopover}
-                            anchorEl={anchorEl}
-                            anchorOrigin={{
-                              vertical: "bottom",
-                              horizontal: "center",
-                            }}
-                            transformOrigin={{
-                              vertical: "top",
-                              horizontal: "center",
-                            }}
-                            key={"popover-1-" + String(questionIndex)}
-                            onClose={handlePopoverClose}
-                            disableRestoreFocus
-                          >
-                            <Typography sx={{ p: 1 }} key={"typography-8-" + String(questionIndex)}>{ member.name }</Typography>
-                          </Popover>
-                        </>
-                      ))
-                    ) : (
-                      <>No member assigned</>
-                    )}
-                    <hr />
-                  </>
-                ))}
-              </div>
-            ))}
-          <div className={createRoundBtnContainer}>
-            <Button variant="contained" onClick={() => handleSaveBtnClick()}>
-              Save
-            </Button>
-          </div>
-        </Box>
-      </Modal>
+      {testScoreModal}
       <ToastContainer
         position="bottom-right"
         autoClose={4000}
