@@ -9,6 +9,7 @@ import Home from "./containers/Home";
 import OauthJump from "./containers/OauthJump";
 import Seasons from "./containers/Seasons";
 import Season from "./containers/Season";
+import Questions from "./containers/Questions";
 
 const useStyles = makeStyles({
   root: {
@@ -34,23 +35,24 @@ function App() {
 
   return (
     <>
+      <BrowserRouter>
       <div className={root}>
         <AppDrawer />
         <div className={mainContainer}>
           <AppHeader />
           <div className={content}>
-            <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Login />} />
                 <Route path="/home/" element={<Home />} />
                 <Route path="/oauthJump/" element={<OauthJump />} />
                 <Route path="/seasons/" element={<Seasons />} />
                 <Route exact path="/season/:id" element={<Season />} />
+                <Route exact path="/season/:id/test/:testId/questions" element={<Questions />} />
               </Routes>
-            </BrowserRouter>
           </div>
         </div>
       </div>
+      </BrowserRouter>
     </>
   );
 }

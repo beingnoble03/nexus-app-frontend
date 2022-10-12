@@ -15,6 +15,7 @@ import { TextField } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
+import { Link } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 
 const style = {
@@ -127,13 +128,22 @@ function AppDrawer(props) {
       {rounds.length ? (
         <>
           {rounds.map((round) => (
+              <Link to={`/season/${selectedSeasonId}`} style={{
+                textDecoration: `inherit`,
+
+              }}>
             <ListItem key={round.id} disablePadding>
               <ListItemButton
                 onClick={() => dispatch(selectedRoundChanged(round))}
+                style={{
+                  textAlign: `center`,
+                }}
               >
                 <ListItemText primary={round.round_name.length>25 ? round.round_name.substr(0, 25) + "..." : round.round_name} />
               </ListItemButton>
             </ListItem>
+            </Link>
+
           ))}
         </>
       ) : (

@@ -11,6 +11,8 @@ import { Button, Box, Modal, TextField, Typography } from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
 import { Popover } from "@mui/material";
 import "react-toastify/dist/ReactToastify.css";
+import { Link } from "react-router-dom";
+import Questions from "../containers/Questions";
 
 const style = {
   position: "absolute",
@@ -56,6 +58,14 @@ const useStyles = makeStyles({
   assigneeTypography: {
     marginTop: `10px !important`,
   },
+  footer:{
+    bottom: `0px`,
+    display: `flex`,
+    padding: `10px`,
+    position: `fixed`,
+    marginBottom: `10px`,
+    width: `100%`
+  },
 });
 
 export default function TestTable(props) {
@@ -71,6 +81,7 @@ export default function TestTable(props) {
     applicantDetialsContainer,
     assigneeImage,
     assigneeTypography,
+    footer,
   } = useStyles();
 
   const handlePopoverOpen = (event) => {
@@ -230,18 +241,18 @@ export default function TestTable(props) {
                   <TextField
                     id={"input-marks-" + String(question.id)}
                     label={
-                      question.obtained_marks
+                      question.obtained_marks || question.obtained_marks === 0
                         ? "Obtained Marks [EVALUATED BEFORE]"
                         : "Obtained Marks"
                     }
-                    color={question.obtained_marks ? "error" : "primary"}
+                    color={question.obtained_marks || question.obtained_marks === 0 ? "error" : "primary"}
                     variant="filled"
                     key={questionIndex}
                     className={inputTestModal}
                     defaultValue={
                       question.obtained_marks
                         ? String(question.obtained_marks)
-                        : ""
+                        : question.obtained_marks === 0 ? "0" : ""
                     }
                     type="number"
                   />
@@ -371,6 +382,12 @@ export default function TestTable(props) {
         pauseOnHover
         theme="light"
       />
+
+      <div className={footer}>
+        <Link to={`test/${props.testId}/questions/`}>
+        <Button variant="contained">View Questions and Assignees</Button>
+        </Link>
+      </div>
     </>
   );
 }
