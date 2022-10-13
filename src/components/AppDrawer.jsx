@@ -15,7 +15,7 @@ import { TextField } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 
 const style = {
@@ -66,6 +66,7 @@ function AppDrawer(props) {
   const isLoading = useSelector((state) => state.drawer.loading);
   const [open, setOpen] = React.useState(false);
   const [option, setOption] = React.useState("T");
+  const navigate = useNavigate();
 
   const showRoundSuccessToast = () => {
     toast.success("Round Created", {
@@ -101,6 +102,13 @@ function AppDrawer(props) {
     (state) => state.drawer.selectedSeasonId
   );
 
+  const handleRoundChange = (round) => {
+    round.round_type === "T"
+      ? navigate(`/season/${selectedSeasonId}/test/${round.id}`)
+      : navigate(`/season/${selectedSeasonId}/interview/${round.id}`);
+    dispatch(selectedRoundChanged(round.id))
+  };
+
   const handleCreateRound = () => {
     const roundName = document.getElementById("input-round-name").value;
     axios({
@@ -128,22 +136,22 @@ function AppDrawer(props) {
       {rounds.length ? (
         <>
           {rounds.map((round) => (
-              <Link to={`/season/${selectedSeasonId}`} style={{
-                textDecoration: `inherit`,
-
-              }}>
-            <ListItem key={round.id} disablePadding>
-              <ListItemButton
-                onClick={() => dispatch(selectedRoundChanged(round))}
-                style={{
-                  textAlign: `center`,
-                }}
-              >
-                <ListItemText primary={round.round_name.length>25 ? round.round_name.substr(0, 25) + "..." : round.round_name} />
-              </ListItemButton>
-            </ListItem>
-            </Link>
-
+              <ListItem disablePadding key={round.id}>
+                <ListItemButton
+                  onClick={() => handleRoundChange(round)}
+                  style={{
+                    textAlign: `center`,
+                  }}
+                >
+                  <ListItemText
+                    primary={
+                      round.round_name.length > 25
+                        ? round.round_name.substr(0, 25) + "..."
+                        : round.round_name
+                    }
+                  />
+                </ListItemButton>
+              </ListItem>
           ))}
         </>
       ) : (

@@ -246,7 +246,6 @@ export default function Questions(props) {
       .catch((response) => {
         console.log(response.message);
       });
-    console.log("Hola");
   }, [refresh]);
 
   useEffect(() => {

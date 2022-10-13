@@ -137,7 +137,6 @@ export default function PanelItem(props) {
   }
 
   const handleSavePanel = () => {
-    const status = document.getElementById("input-panel-status").value
     const place = document.getElementById("input-panel-place").value
     const panelAvailable = available === "Available"
 

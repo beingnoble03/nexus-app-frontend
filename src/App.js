@@ -11,6 +11,8 @@ import Seasons from "./containers/Seasons";
 import Season from "./containers/Season";
 import Questions from "./containers/Questions";
 import Panels from "./containers/Panels";
+import Interview from "./containers/Interview";
+import Test from "./containers/Test";
 
 const useStyles = makeStyles({
   root: {
@@ -49,6 +51,8 @@ function App() {
                 <Route path="/seasons/" element={<Seasons />} />
                 <Route path="/panels/" element={<Panels />} />
                 <Route exact path="/season/:id" element={<Season />} />
+                <Route exact path="/season/:id/test/:roundId" element={<Test />} />
+                <Route exact path="/season/:id/interview/:roundId" element={<Interview />} />
                 <Route exact path="/season/:id/test/:testId/questions" element={<Questions />} />
               </Routes>
           </div>

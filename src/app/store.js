@@ -5,6 +5,7 @@ import appBarReducer from './features/appBarSlice'
 import seasonReducer from './features/seasonSlice'
 import imgMemberReducer from './features/imgMemberSlice'
 import panelReducer from './features/panelSlice'
+import interviewReducer from './features/interviewSlice'
 
 const store = configureStore({
     reducer: {
@@ -14,6 +15,7 @@ const store = configureStore({
         season: seasonReducer,
         imgMember: imgMemberReducer,
         panel: panelReducer,
+        interview: interviewReducer,
     },
 })
 

@@ -9,8 +9,6 @@ import {
 } from "../app/features/drawerSlice";
 import axios from "axios";
 import { useParams } from "react-router-dom";
-import Test from "./Test";
-import Interview from "./Interview";
 import { Typography } from "@mui/material";
 import { selectedRoundChanged } from "../app/features/seasonSlice";
 
@@ -21,9 +19,6 @@ export default function Season(props) {
     dispatch(roundsVisibilityChanged(true));
     dispatch(selectedSeasonIdChanged(id));
     dispatch(fetchRounds())
-    return () => {
-      dispatch(selectedRoundChanged(null));
-    };
   }, []);
 
   useEffect(() => {
@@ -36,23 +31,9 @@ export default function Season(props) {
     }).then((response) => {
       dispatch(titleChanged(response.data.name));
     });
-  });
-
-  const selectedRound = useSelector((state) => state.season.selectedRound);
+  }, [id]);
 
   return (
-    <>
-      {selectedRound ? (
-        <>
-          {selectedRound.round_type === "T" ? (
-            <Test tests={selectedRound.test_titles} />
-          ) : (
-            <Interview />
-          )}
-        </>
-      ) : (
-        <Typography>Select a round to view details</Typography>
-      )}
-    </>
+    <Typography>Select a round to view details</Typography>
   );
 }

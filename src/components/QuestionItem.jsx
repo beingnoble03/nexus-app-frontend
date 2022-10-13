@@ -3,9 +3,10 @@ import { useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { Typography, Button } from "@mui/material";
 import { makeStyles } from "@mui/styles";
-import { TextField, MenuItem } from "@mui/material";
+import { TextField, MenuItem, Checkbox } from "@mui/material";
 import axios from "axios";
 import { Modal, Box } from "@mui/material";
+
 
 const style = {
   position: "absolute",
@@ -78,6 +79,26 @@ export default function QuestionItem(props) {
   const [openQuestionModal, setOpenQuestionModal] = useState(false);
   const imgMembers = useSelector((state) => state.imgMember.imgMembers);
   const [question, setQuestion] = useState(null)
+  const [selectedImgMembers, setSelectedImgMembers] = useState([])
+
+
+  const handleModalClose = () => {
+    setOpenQuestionModal(false)
+    setSelectedImgMembers([])
+  }
+
+  const handleModalOpen = () => {
+    setOpenQuestionModal(true)
+    setSelectedImgMembers(question.assignee)
+  }
+
+  const handleCheckboxChange = (event) => {
+    if (event.target.checked) {
+      setSelectedImgMembers(prevState => [...prevState, parseInt(event.target.value)])
+    } else {
+      setSelectedImgMembers(prevState => prevState.filter(id_ => id_ !== parseInt(event.target.value)))
+    }
+}
 
   const handleSaveQuestion = () => {
       const maximumMarks = document.getElementById("input-question-maximum-marks").value
@@ -92,6 +113,7 @@ export default function QuestionItem(props) {
             title,
             "maximum_marks": maximumMarks,
             section: question.section,
+            assignee: selectedImgMembers,
         },
       })
         .then((response) => {
@@ -118,7 +140,7 @@ export default function QuestionItem(props) {
       { question && 
       <Modal
         open={openQuestionModal}
-        onClose={() => setOpenQuestionModal(false)}
+        onClose={handleModalClose}
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
@@ -146,7 +168,13 @@ export default function QuestionItem(props) {
           </Typography>
           <div className={imgMembersContainer}>
             {imgMembers.map((imgMember, index) => (
-              <>{imgMember.name && <div key={index}>{imgMember.name}</div>}</>
+              <>{imgMember.name && 
+                <div key={index}>
+                  <Checkbox 
+                defaultChecked={question.assignee.indexOf(imgMember.id) !== -1}
+                onChange={handleCheckboxChange}
+                value={imgMember.id}
+                />{imgMember.name}</div>}</>
             ))}
           </div>
           <div className={saveQuestionBtnContainer}>
@@ -192,7 +220,7 @@ export default function QuestionItem(props) {
           <>No member assigned</>
         )}
       </div>
-      <Button variant="contained" onClick={() => setOpenQuestionModal(true)}>
+      <Button variant="contained" onClick={handleModalOpen}>
         Edit
       </Button>
       </>

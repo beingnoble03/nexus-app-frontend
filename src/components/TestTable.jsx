@@ -12,7 +12,6 @@ import { toast, ToastContainer } from "react-toastify";
 import { Popover } from "@mui/material";
 import "react-toastify/dist/ReactToastify.css";
 import { Link } from "react-router-dom";
-import Questions from "../containers/Questions";
 
 const style = {
   position: "absolute",
@@ -384,7 +383,7 @@ export default function TestTable(props) {
       />
 
       <div className={footer}>
-        <Link to={`test/${props.testId}/questions/`}>
+        <Link to={`/season/${props.seasonId}/test/${props.testId}/questions/`}>
         <Button variant="contained">View Questions and Assignees</Button>
         </Link>
       </div>
