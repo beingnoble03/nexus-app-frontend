@@ -4,6 +4,7 @@ import drawerReducer from './features/drawerSlice'
 import appBarReducer from './features/appBarSlice'
 import seasonReducer from './features/seasonSlice'
 import imgMemberReducer from './features/imgMemberSlice'
+import panelReducer from './features/panelSlice'
 
 const store = configureStore({
     reducer: {
@@ -12,6 +13,7 @@ const store = configureStore({
         appBar: appBarReducer,
         season: seasonReducer,
         imgMember: imgMemberReducer,
+        panel: panelReducer,
     },
 })
 

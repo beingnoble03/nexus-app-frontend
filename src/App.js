@@ -10,6 +10,7 @@ import OauthJump from "./containers/OauthJump";
 import Seasons from "./containers/Seasons";
 import Season from "./containers/Season";
 import Questions from "./containers/Questions";
+import Panels from "./containers/Panels";
 
 const useStyles = makeStyles({
   root: {
@@ -46,6 +47,7 @@ function App() {
                 <Route path="/home/" element={<Home />} />
                 <Route path="/oauthJump/" element={<OauthJump />} />
                 <Route path="/seasons/" element={<Seasons />} />
+                <Route path="/panels/" element={<Panels />} />
                 <Route exact path="/season/:id" element={<Season />} />
                 <Route exact path="/season/:id/test/:testId/questions" element={<Questions />} />
               </Routes>
