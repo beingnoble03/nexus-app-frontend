@@ -12,6 +12,9 @@ import { toast, ToastContainer } from "react-toastify";
 import { Popover } from "@mui/material";
 import "react-toastify/dist/ReactToastify.css";
 import { Link } from "react-router-dom";
+import Paginator from "./Paginator";
+import { useDispatch, useSelector } from "react-redux";
+import { currentPageChanged, numOfPagesChanged } from "../app/features/paginatorSlice";
 
 const style = {
   position: "absolute",
@@ -63,8 +66,16 @@ const useStyles = makeStyles({
     padding: `10px`,
     position: `fixed`,
     marginBottom: `10px`,
-    width: `100%`
+    width: `-webkit-fill-available`,
+    flexWrap: `wrap`,
   },
+  paginatorConatiner: {
+    display: `flex`,
+    justifyContent: `flex-end`,
+    alignContent: `flex-end`,
+    flexGrow: 1,
+    paddingRight: `40px`,
+  }
 });
 
 export default function TestTable(props) {
@@ -72,6 +83,9 @@ export default function TestTable(props) {
   const [testScore, setTestScore] = useState(null);
   const [open, setOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const currentPage = useSelector(state => state.paginator.currentPage)
+  const numOfApplicantsPerPage = 2;
+  const dispatch = useDispatch();
 
   const {
     createRoundBtnContainer,
@@ -81,7 +95,15 @@ export default function TestTable(props) {
     assigneeImage,
     assigneeTypography,
     footer,
+    paginatorConatiner,
   } = useStyles();
+
+  const getEndOfList = () => {
+    if (currentPage*numOfApplicantsPerPage >= applicants.length) {
+      return applicants.length
+    }
+    return currentPage*numOfApplicantsPerPage
+  }
 
   const handlePopoverOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -186,6 +208,8 @@ export default function TestTable(props) {
       },
     }).then((response) => {
       setApplicants(response.data.applicants);
+      dispatch(currentPageChanged(1))
+      dispatch(numOfPagesChanged(Math.ceil(response.data.applicants.length / numOfApplicantsPerPage)));
     });
   }, []);
 
@@ -341,7 +365,7 @@ export default function TestTable(props) {
           </TableHead>
           <TableBody>
             {applicants ? (
-              applicants.map((applicant) => (
+              applicants.slice((currentPage-1)*numOfApplicantsPerPage, getEndOfList()).map((applicant) => (
                 <TableRow
                   key={applicant.id}
                   sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
@@ -386,6 +410,9 @@ export default function TestTable(props) {
         <Link to={`/season/${props.seasonId}/test/${props.testId}/questions/`}>
         <Button variant="contained">View Questions and Assignees</Button>
         </Link>
+        <div className={paginatorConatiner}>
+        <Paginator />
+        </div>
       </div>
     </>
   );

@@ -12,65 +12,74 @@ import { Modal, Box, Typography, TextField } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 
-
 const style = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: 400,
-    bgcolor: "background.paper",
-    border: "1px solid #000",
-    boxShadow: 24,
-    p: 4,
-    borderRadius: `10px`,
-  };
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 400,
+  bgcolor: "background.paper",
+  border: "1px solid #000",
+  boxShadow: 24,
+  p: 4,
+  borderRadius: `10px`,
+};
 
-  const useStyles = makeStyles({
-    createRoundBtnContainer: {
-      display: `flex`,
-      justifyContent: `flex-end`,
-      marginTop: `15px`,
-    },
-    inputTestModal: {
-      width: `100%`,
-      marginTop: `10px !important`,
-    },
-    sectionContentContainer: {
-      marginTop: `10px`,
-      padding: `5px`,
-    },
-    applicantDetialsContainer: {
-      marginTop: `10px`,
-      padding: `5px 10px`,
-      border: `1px solid #e9f5f1`,
-      borderRadius: `5px`,
-      backgroundColor: `#e9f5f8`,
-    },
-  });
+const useStyles = makeStyles({
+  createRoundBtnContainer: {
+    display: `flex`,
+    justifyContent: `flex-end`,
+    marginTop: `15px`,
+  },
+  inputTestModal: {
+    width: `100%`,
+    marginTop: `10px !important`,
+  },
+  sectionContentContainer: {
+    marginTop: `10px`,
+    padding: `5px`,
+  },
+  applicantDetialsContainer: {
+    marginTop: `10px`,
+    padding: `5px 10px`,
+    border: `1px solid #e9f5f1`,
+    borderRadius: `5px`,
+    backgroundColor: `#e9f5f8`,
+  },
+  assigneeImage: {
+    width: `30px`,
+    height: `auto`,
+    padding: 2,
+  },
+  assigneeTypography: {
+    marginTop: `10px !important`,
+  },
+});
 
 export default function InterviewRow(props) {
-
-
   const {
     createRoundBtnContainer,
     inputTestModal,
     applicantDetialsContainer,
+    sectionContentContainer,
+    assigneeImage,
+    assigneeTypography,
   } = useStyles();
-
   const { id, roundId } = useParams();
   const [openEditModal, setOpenEditModal] = useState(false);
+  const [openScoreModal, setOpenScoreModal] = useState(false);
   const [interview, setInterview] = useState(props.interview);
   const [timeAssigned, setTimeAssigned] = useState(dayjs(""));
   const [timeEntered, setTimeEntered] = useState(dayjs(""));
   const [selectedPanel, setSelectedPanel] = useState("None");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const interviewStatusChoices = props.interviewStatusChoices
-  const panelNames = props.panelNames
+  const [interviewScore, setInterviewScore] = useState(null);
+  const interviewStatusChoices = props.interviewStatusChoices;
+  const panelNames = props.panelNames;
 
   const handleEditInterview = () => {
-      setOpenEditModal(true)
-  }
+    setOpenEditModal(true);
+  };
 
   const handlePanelChange = (event) => {
     setSelectedPanel(event.target.value);
@@ -80,9 +89,7 @@ export default function InterviewRow(props) {
     setSelectedStatus(event.target.value);
   };
 
-
-
-  const handleSaveInterview = () =>{
+  const handleSaveInterview = () => {
     axios({
       method: "patch",
       url: `http://localhost:8000/api/interviews/${interview.id}/`,
@@ -90,20 +97,24 @@ export default function InterviewRow(props) {
         Authorization: "Token " + localStorage.getItem("token"),
       },
       data: {
-          applicant: interview.applicant,
-          completed: selectedStatus === "Completed",
-          round: roundId,
-          panel: selectedPanel === "None" ? null : selectedPanel,
-          time_assigned: timeAssigned,
-          time_entered: timeEntered,
+        applicant: interview.applicant,
+        completed: selectedStatus === "Completed",
+        round: roundId,
+        panel: selectedPanel === "None" ? null : selectedPanel,
+        time_assigned: timeAssigned,
+        time_entered: timeEntered,
       },
-    })
-      .then((response) => {
-          console.log(response.data)
-          setInterview(response.data)
-          setOpenEditModal(false)
-  })
+    }).then((response) => {
+      console.log(response.data);
+      setInterview(response.data);
+      setOpenEditModal(false);
+    });
+  };
+
+  const handleSaveInterviewMarks = () => {
+    console.log("hel");
   }
+
   useEffect(() => {
     if (interview && interview.time_assigned) {
       setTimeAssigned(dayjs(interview.time_assigned));
@@ -112,10 +123,201 @@ export default function InterviewRow(props) {
       setTimeEntered(dayjs(interview.time_entered));
     }
     if (interview) {
-        setSelectedPanel(interview.panel ? interview.panel : "");
-        setSelectedStatus(interview.completed ? "Completed" : "Pending")
+      setSelectedPanel(interview.panel ? interview.panel : "");
+      setSelectedStatus(interview.completed ? "Completed" : "Pending");
     }
   }, [openEditModal]);
+
+  const scoreModal = (
+    <Modal
+      open={openScoreModal}
+      onClose={() => setOpenScoreModal(false)}
+      aria-labelledby="modal-modal-title"
+      aria-describedby="modal-modal-description"
+      sx={{
+        maxHeight: `100%`,
+      }}
+    >
+      <Box sx={style}>
+        <Typography id="modal-modal-title" variant="h5" component="h2">
+          <b>Sections</b> {interviewScore && interviewScore.round_details.round_name}
+        </Typography>
+        <div className={applicantDetialsContainer}>
+          <Typography variant="h6">Applicant Details</Typography>
+          <Typography variant="subtitle1">
+            <b>Name </b>
+            {interviewScore && interviewScore.applicant_details.name}
+          </Typography>
+          <Typography variant="subtitle2">
+            <b>Enrolment Number </b>
+            {interviewScore &&
+              interviewScore.applicant_details.enrolment_number}
+          </Typography>
+        </div>
+        {interviewScore &&
+          interviewScore.round_details.sections.map((section, index) => (
+            <div className={sectionContentContainer} key={index}>
+              <Typography variant="h6" key={"typography-1-" + String(index)}>
+                <b>Section </b>
+                {section.title}
+              </Typography>
+              <Typography
+                    varient="subtitle2"
+                    key={"typography-3-" + String(index)}
+                  >
+                    <b>Maximum Marks </b>
+                    {section.maximum_marks}{" "}
+                  </Typography>
+                  <TextField
+                    id={"input-marks-" + String(index)}
+                    label={"Obtained Marks"}
+                    color={
+                      section.obtained_marks || section.obtained_marks === 0
+                        ? "error"
+                        : "primary"
+                    }
+                    variant="filled"
+                    key={index}
+                    className={inputTestModal}
+                    defaultValue={
+                      section.obtained_marks
+                        ? String(section.obtained_marks)
+                        : section.obtained_marks === 0
+                        ? "0"
+                        : ""
+                    }
+                    type="number"
+                  />
+
+{/* 
+              {section.questions.map((question, questionIndex) => (
+                <>
+                  <Typography
+                    key={"typography-2-" + String(questionIndex)}
+                    variant="subtitle1"
+                  >
+                    <b>Question </b>
+                    {question.title}{" "}
+                  </Typography>
+                  <Typography
+                    varient="subtitle2"
+                    key={"typography-3-" + String(questionIndex)}
+                  >
+                    <b>Maximum Marks </b>
+                    {question.maximum_marks}{" "}
+                  </Typography>
+                  <TextField
+                    id={"input-marks-" + String(question.id)}
+                    label={
+                      question.obtained_marks || question.obtained_marks === 0
+                        ? "Obtained Marks [EVALUATED BEFORE]"
+                        : "Obtained Marks"
+                    }
+                    color={
+                      question.obtained_marks || question.obtained_marks === 0
+                        ? "error"
+                        : "primary"
+                    }
+                    variant="filled"
+                    key={questionIndex}
+                    className={inputTestModal}
+                    defaultValue={
+                      question.obtained_marks
+                        ? String(question.obtained_marks)
+                        : question.obtained_marks === 0
+                        ? "0"
+                        : ""
+                    }
+                    type="number"
+                  />
+                  <TextField
+                    id={"input-remarks-" + String(question.id)}
+                    label={"Remarks"}
+                    color={question.obtained_marks ? "error" : "primary"}
+                    variant="filled"
+                    key={"text-field-2-" + String(questionIndex)}
+                    className={inputTestModal}
+                    defaultValue={question.remarks ? question.remarks : ""}
+                  />
+                  <Typography
+                    varient="subtitle2"
+                    key={"typography-6-" + String(questionIndex)}
+                    className={assigneeTypography}
+                  >
+                    <b>Assignees</b>
+                  </Typography>
+                  {question.assignee.length ? (
+                    question.assignee.map((member, index) => (
+                      <>
+                        <img
+                          className={assigneeImage}
+                          src={member.image}
+                          key={"assignee-image-" + String(index)}
+                        />
+                          <Typography
+                            sx={{ p: 1 }}
+                            key={"typography-8-" + String(questionIndex)}
+                          >
+                            {member.name}
+                          </Typography>
+                      </>
+                    ))
+                  ) : (
+                    <>No member assigned</>
+                  )}
+                  
+                  
+                </>
+              ))} */}
+                  <hr />
+            </div>
+          ))}
+            <TextField
+                    label={"Remarks"}
+                    color="primary"
+                    variant="filled"
+                    className={inputTestModal}
+                    defaultValue={interview.remarks ? interview.remarks : ""}
+                  />
+        <div className={createRoundBtnContainer}>
+          <Button variant="contained" onClick={() => handleSaveInterviewMarks()}>
+            Save
+          </Button>
+        </div>
+      </Box>
+    </Modal>
+  );
+
+  const handleViewMarks = () => {
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/interviewMarks?applicant_id=${interview.applicant_details.id}&round_id=${roundId}`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    })
+      .then((response) => {
+        console.log(response.data);
+        setInterviewScore(response.data);
+        setOpenScoreModal(true);
+      })
+      .catch((response) => {
+        let errorTitle = "No sections available for this interview.";
+        if (response.response.status === 403) {
+          errorTitle = "You are not permitted to view interview marks.";
+        }
+        // toast.error(errorTitle, {
+        //   position: "bottom-right",
+        //   autoClose: 4000,
+        //   hideProgressBar: false,
+        //   closeOnClick: true,
+        //   pauseOnHover: true,
+        //   draggable: true,
+        //   progress: undefined,
+        //   theme: "light",
+        // });
+      });
+  };
 
   const editInterviewModal = (
     <Modal
@@ -139,8 +341,7 @@ export default function InterviewRow(props) {
           </Typography>
           <Typography variant="subtitle2">
             <b>Enrolment Number </b>
-            {interview &&
-              interview.applicant_details.enrolment_number}
+            {interview && interview.applicant_details.enrolment_number}
           </Typography>
         </div>
 
@@ -197,14 +398,16 @@ export default function InterviewRow(props) {
             ))}
         </TextField>
         <div className={createRoundBtnContainer}>
-          <Button variant="contained" onClick={handleSaveInterview}>Save</Button>
+          <Button variant="contained" onClick={handleSaveInterview}>
+            Save
+          </Button>
         </div>
       </Box>
     </Modal>
   );
 
-
   return (
+    <>
     <TableRow
       key={interview.id}
       sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
@@ -212,7 +415,6 @@ export default function InterviewRow(props) {
       tabIndex={-1}
       aria-checked={true}
       selected={true}
-      // onClick={() => handleTableRowClick(interview.id)}
     >
       <TableCell component="th" scope="row" align="center">
         {interview.id}
@@ -241,7 +443,12 @@ export default function InterviewRow(props) {
       <TableCell align="center">
         <Button onClick={handleEditInterview}>Edit</Button>
       </TableCell>
-      {editInterviewModal}
+      <TableCell align="center">
+        <Button onClick={handleViewMarks}>Marks</Button>
+      </TableCell>
     </TableRow>
+    {editInterviewModal}
+    {scoreModal}
+    </>
   );
 }

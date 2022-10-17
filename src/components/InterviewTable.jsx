@@ -17,6 +17,7 @@ import { Modal, Box, Typography, TextField } from "@mui/material";
 import { fetchPanels } from "../app/features/panelSlice";
 import InterviewRow from "./InterviewRow";
 import { useParams } from "react-router-dom";
+import { currentPageChanged, numOfPagesChanged } from "../app/features/paginatorSlice";
 
 
 const useStyles = makeStyles({
@@ -63,6 +64,8 @@ export default function InterviewTable(props) {
   const { id, roundId } = useParams();
   const panel = useSelector((state) => state.panel);
   const dispatch = useDispatch();
+  const currentPage = useSelector(state => state.paginator.currentPage)
+  const numOfApplicantsPerPage = 2;
 
   const {
     createRoundBtnContainer,
@@ -102,7 +105,12 @@ export default function InterviewTable(props) {
       }
   ]
 
-
+  const getEndOfList = () => {
+    if (currentPage*numOfApplicantsPerPage >= interviews.length) {
+      return interviews.length
+    }
+    return currentPage*numOfApplicantsPerPage
+  }
 
 
   useEffect(() => {
@@ -114,6 +122,8 @@ export default function InterviewTable(props) {
       },
     }).then((response) => {
       setInterviews(response.data.interviews);
+      dispatch(currentPageChanged(1))
+      dispatch(numOfPagesChanged(Math.ceil(response.data.interviews.length / numOfApplicantsPerPage)));
     });
     dispatch(fetchPanels());
   }, []);
@@ -136,11 +146,12 @@ export default function InterviewTable(props) {
               <TableCell align="center">Time Assigned</TableCell>
               <TableCell align="center">Time Entered</TableCell>
               <TableCell align="center">Edit</TableCell>
+              <TableCell align="center">Marks</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {interviews ? (
-              interviews.map((interview) => (
+              interviews.slice((currentPage-1)*numOfApplicantsPerPage, getEndOfList()).map((interview) => (
                   <InterviewRow interview={interview} panelNames={panelNames} interviewStatusChoices={interviewStatusChoices} key={interview.id}/>
               ))
             ) : (

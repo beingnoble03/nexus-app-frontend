@@ -57,7 +57,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const drawerWidth = 200;
+const drawerWidth = 250;
 
 function AppDrawer(props) {
   const { window } = props;

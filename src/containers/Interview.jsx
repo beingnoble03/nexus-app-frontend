@@ -10,9 +10,14 @@ import InterviewTable from "../components/InterviewTable";
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { roundsVisibilityChanged, fetchRounds, selectedSeasonIdChanged } from "../app/features/drawerSlice";
+import {
+  roundsVisibilityChanged,
+  fetchRounds,
+  selectedSeasonIdChanged,
+} from "../app/features/drawerSlice";
 import { titleChanged } from "../app/features/appBarSlice";
 import axios from "axios";
+import Paginator from "../components/Paginator";
 
 const useStyles = makeStyles({
   mainContainer: {
@@ -25,25 +30,35 @@ const useStyles = makeStyles({
     flexGrow: 1,
     padding: `15px`,
   },
-  interviewBtnContainer: {
+  footer: {
     display: `flex`,
     padding: `10px`,
     paddingBottom: `20px`,
     flexDirection: `row`,
     height: `auto`,
-  }
-})
+    paddingLeft: `20px`,
+  },
+  paginatorConatiner: {
+    display: `flex`,
+    justifyContent: `flex-end`,
+    alignContent: `flex-end`,
+    flexGrow: 1,
+    paddingRight: `40px`,
+  },
+});
 
 export default function Interview() {
-  const { mainContainer, interviewBtnContainer, interviewTableContainer } = useStyles()
-  const navigate = useNavigate()
+  const { mainContainer, footer, interviewTableContainer, paginatorConatiner } =
+    useStyles();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { id, roundId } = useParams();
 
   useEffect(() => {
     dispatch(roundsVisibilityChanged(true));
     dispatch(selectedSeasonIdChanged(id));
-    dispatch(fetchRounds())
+    dispatch(fetchRounds());
+    console.log("hello");
   }, [id]);
 
   useEffect(() => {
@@ -62,11 +77,14 @@ export default function Interview() {
       <div className={interviewTableContainer}>
         <InterviewTable />
       </div>
-      <div className={interviewBtnContainer}>
-        <Button variant="contained" onClick={() => navigate('/panels/')}>
+      <div className={footer}>
+        <Button variant="contained" onClick={() => navigate("/panels/")}>
           View Panels
         </Button>
+        <div className={paginatorConatiner}>
+          <Paginator />
+        </div>
       </div>
     </div>
-  )
+  );
 }
