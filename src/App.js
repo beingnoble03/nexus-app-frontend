@@ -37,7 +37,6 @@ function App() {
   const { root, mainContainer, content } = classes;
 
   return (
-    <>
       <BrowserRouter>
       <div className={root}>
         <AppDrawer />
@@ -59,7 +58,6 @@ function App() {
         </div>
       </div>
       </BrowserRouter>
-    </>
   );
 }
 

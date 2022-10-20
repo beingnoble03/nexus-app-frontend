@@ -106,7 +106,7 @@ function AppDrawer(props) {
     round.round_type === "T"
       ? navigate(`/season/${selectedSeasonId}/test/${round.id}`)
       : navigate(`/season/${selectedSeasonId}/interview/${round.id}`);
-    dispatch(selectedRoundChanged(round.id))
+    dispatch(selectedRoundChanged(round.id));
   };
 
   const handleCreateRound = () => {
@@ -136,22 +136,22 @@ function AppDrawer(props) {
       {rounds.length ? (
         <>
           {rounds.map((round) => (
-              <ListItem disablePadding key={round.id}>
-                <ListItemButton
-                  onClick={() => handleRoundChange(round)}
-                  style={{
-                    textAlign: `center`,
-                  }}
-                >
-                  <ListItemText
-                    primary={
-                      round.round_name.length > 25
-                        ? round.round_name.substr(0, 25) + "..."
-                        : round.round_name
-                    }
-                  />
-                </ListItemButton>
-              </ListItem>
+            <ListItem disablePadding key={round.id}>
+              <ListItemButton
+                onClick={() => handleRoundChange(round)}
+                style={{
+                  textAlign: `center`,
+                }}
+              >
+                <ListItemText
+                  primary={
+                    round.round_name.length > 25
+                      ? round.round_name.substr(0, 25) + "..."
+                      : round.round_name
+                  }
+                />
+              </ListItemButton>
+            </ListItem>
           ))}
         </>
       ) : (

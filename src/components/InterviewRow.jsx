@@ -10,8 +10,10 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import dayjs from "dayjs";
 import { Modal, Box, Typography, TextField } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import moment from "moment";
 
+// Unable to set panel to none
 const style = {
   position: "absolute",
   top: "50%",
@@ -65,6 +67,7 @@ export default function InterviewRow(props) {
     assigneeImage,
     assigneeTypography,
   } = useStyles();
+
   const { id, roundId } = useParams();
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openScoreModal, setOpenScoreModal] = useState(false);
@@ -76,6 +79,7 @@ export default function InterviewRow(props) {
   const [interviewScore, setInterviewScore] = useState(null);
   const interviewStatusChoices = props.interviewStatusChoices;
   const panelNames = props.panelNames;
+  const navigate = useNavigate();
 
   const handleEditInterview = () => {
     setOpenEditModal(true);
@@ -113,7 +117,7 @@ export default function InterviewRow(props) {
 
   const handleSaveInterviewMarks = () => {
     console.log("hel");
-  }
+  };
 
   useEffect(() => {
     if (interview && interview.time_assigned) {
@@ -140,7 +144,8 @@ export default function InterviewRow(props) {
     >
       <Box sx={style}>
         <Typography id="modal-modal-title" variant="h5" component="h2">
-          <b>Sections</b> {interviewScore && interviewScore.round_details.round_name}
+          <b>Sections</b>{" "}
+          {interviewScore && interviewScore.round_details.round_name}
         </Typography>
         <div className={applicantDetialsContainer}>
           <Typography variant="h6">Applicant Details</Typography>
@@ -162,125 +167,48 @@ export default function InterviewRow(props) {
                 {section.title}
               </Typography>
               <Typography
-                    varient="subtitle2"
-                    key={"typography-3-" + String(index)}
-                  >
-                    <b>Maximum Marks </b>
-                    {section.maximum_marks}{" "}
-                  </Typography>
-                  <TextField
-                    id={"input-marks-" + String(index)}
-                    label={"Obtained Marks"}
-                    color={
-                      section.obtained_marks || section.obtained_marks === 0
-                        ? "error"
-                        : "primary"
-                    }
-                    variant="filled"
-                    key={index}
-                    className={inputTestModal}
-                    defaultValue={
-                      section.obtained_marks
-                        ? String(section.obtained_marks)
-                        : section.obtained_marks === 0
-                        ? "0"
-                        : ""
-                    }
-                    type="number"
-                  />
-
-{/* 
-              {section.questions.map((question, questionIndex) => (
-                <>
-                  <Typography
-                    key={"typography-2-" + String(questionIndex)}
-                    variant="subtitle1"
-                  >
-                    <b>Question </b>
-                    {question.title}{" "}
-                  </Typography>
-                  <Typography
-                    varient="subtitle2"
-                    key={"typography-3-" + String(questionIndex)}
-                  >
-                    <b>Maximum Marks </b>
-                    {question.maximum_marks}{" "}
-                  </Typography>
-                  <TextField
-                    id={"input-marks-" + String(question.id)}
-                    label={
-                      question.obtained_marks || question.obtained_marks === 0
-                        ? "Obtained Marks [EVALUATED BEFORE]"
-                        : "Obtained Marks"
-                    }
-                    color={
-                      question.obtained_marks || question.obtained_marks === 0
-                        ? "error"
-                        : "primary"
-                    }
-                    variant="filled"
-                    key={questionIndex}
-                    className={inputTestModal}
-                    defaultValue={
-                      question.obtained_marks
-                        ? String(question.obtained_marks)
-                        : question.obtained_marks === 0
-                        ? "0"
-                        : ""
-                    }
-                    type="number"
-                  />
-                  <TextField
-                    id={"input-remarks-" + String(question.id)}
-                    label={"Remarks"}
-                    color={question.obtained_marks ? "error" : "primary"}
-                    variant="filled"
-                    key={"text-field-2-" + String(questionIndex)}
-                    className={inputTestModal}
-                    defaultValue={question.remarks ? question.remarks : ""}
-                  />
-                  <Typography
-                    varient="subtitle2"
-                    key={"typography-6-" + String(questionIndex)}
-                    className={assigneeTypography}
-                  >
-                    <b>Assignees</b>
-                  </Typography>
-                  {question.assignee.length ? (
-                    question.assignee.map((member, index) => (
-                      <>
-                        <img
-                          className={assigneeImage}
-                          src={member.image}
-                          key={"assignee-image-" + String(index)}
-                        />
-                          <Typography
-                            sx={{ p: 1 }}
-                            key={"typography-8-" + String(questionIndex)}
-                          >
-                            {member.name}
-                          </Typography>
-                      </>
-                    ))
-                  ) : (
-                    <>No member assigned</>
-                  )}
-                  
-                  
-                </>
-              ))} */}
-                  <hr />
+                varient="subtitle2"
+                key={"typography-3-" + String(index)}
+              >
+                <b>Maximum Marks </b>
+                {section.maximum_marks}{" "}
+              </Typography>
+              <TextField
+                id={"input-marks-" + String(index)}
+                label={"Obtained Marks"}
+                color={
+                  section.obtained_marks || section.obtained_marks === 0
+                    ? "error"
+                    : "primary"
+                }
+                variant="filled"
+                key={index}
+                className={inputTestModal}
+                defaultValue={
+                  section.obtained_marks
+                    ? String(section.obtained_marks)
+                    : section.obtained_marks === 0
+                    ? "0"
+                    : ""
+                }
+                type="number"
+              />
+              <hr />
             </div>
           ))}
-            <TextField
-                    label={"Remarks"}
-                    color="primary"
-                    variant="filled"
-                    className={inputTestModal}
-                    defaultValue={interview.remarks ? interview.remarks : ""}
-                  />
+        <TextField
+          id="interview-remarks"
+          label={"Remarks"}
+          color="primary"
+          variant="filled"
+          className={inputTestModal}
+          defaultValue={interview.remarks ? interview.remarks : ""}
+        />
         <div className={createRoundBtnContainer}>
-          <Button variant="contained" onClick={() => handleSaveInterviewMarks()}>
+          <Button
+            variant="contained"
+            onClick={() => handleSaveInterviewMarks()}
+          >
             Save
           </Button>
         </div>
@@ -408,47 +336,60 @@ export default function InterviewRow(props) {
 
   return (
     <>
-    <TableRow
-      key={interview.id}
-      sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-      role="checkbox"
-      tabIndex={-1}
-      aria-checked={true}
-      selected={true}
-    >
-      <TableCell component="th" scope="row" align="center">
-        {interview.id}
-      </TableCell>
-      <TableCell align="center">{interview.applicant_details.name}</TableCell>
-      <TableCell align="center">
-        {interview.applicant_details.enrolment_number}
-      </TableCell>
-      <TableCell align="center">{interview.applicant_details.mobile}</TableCell>
-      <TableCell align="center">
-        {interview.completed ? "Completed" : "Pending"}
-      </TableCell>
-      <TableCell align="center">
-        {interview.panel
-          ? interview.panel_place.length > 20
-            ? interview.panel_place.substr(0, 20) + "..."
-            : interview.panel_place
-          : "NA"}
-      </TableCell>
-      <TableCell align="center">
-        {interview.time_assigned ? interview.time_assigned : "NA"}
-      </TableCell>
-      <TableCell align="center">
-        {interview.time_entered ? interview.time_entered : "NA"}
-      </TableCell>
-      <TableCell align="center">
-        <Button onClick={handleEditInterview}>Edit</Button>
-      </TableCell>
-      <TableCell align="center">
-        <Button onClick={handleViewMarks}>Marks</Button>
-      </TableCell>
-    </TableRow>
-    {editInterviewModal}
-    {scoreModal}
+      <TableRow
+        key={interview.id}
+        sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+        role="checkbox"
+        tabIndex={-1}
+        aria-checked={true}
+        selected={true}
+      >
+        <TableCell component="th" scope="row" align="center">
+          {interview.id}
+        </TableCell>
+        <TableCell align="center">{interview.applicant_details.name}</TableCell>
+        <TableCell align="center">
+          {interview.applicant_details.enrolment_number}
+        </TableCell>
+        <TableCell align="center">
+          {interview.applicant_details.mobile}
+        </TableCell>
+        <TableCell align="center">
+          {interview.completed ? "Completed" : "Pending"}
+        </TableCell>
+        <TableCell align="center">
+          <Link
+            to={`/panels/?pid=${interview.panel}`}
+            style={{
+              textDecoration: `none`,
+            }}
+          >
+            {interview.panel
+              ? interview.panel_place.length > 20
+                ? interview.panel_place.substr(0, 20) + "..."
+                : interview.panel_place
+              : "NA"}
+          </Link>
+        </TableCell>
+        <TableCell align="center">
+          {interview.time_assigned
+            ? moment(interview.time_assigned).format("MMMM Do YYYY, h:mm:ss a")
+            : "NA"}
+        </TableCell>
+        <TableCell align="center">
+          {interview.time_entered
+            ? moment(interview.time_entered).format("MMMM Do YYYY, h:mm:ss a")
+            : "NA"}
+        </TableCell>
+        <TableCell align="center">
+          <Button onClick={handleEditInterview}>Edit</Button>
+        </TableCell>
+        <TableCell align="center">
+          <Button onClick={handleViewMarks}>Marks</Button>
+        </TableCell>
+      </TableRow>
+      {editInterviewModal}
+      {scoreModal}
     </>
   );
 }

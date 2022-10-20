@@ -4,6 +4,7 @@ import { currentPageChanged } from "../app/features/paginatorSlice";
 
 export default function Paginator() {
   const numOfPages = useSelector((state) => state.paginator.numOfPages);
+  const currentPage = useSelector(state => state.paginator.currentPage)
   const dispatch = useDispatch();
 
   const handleCurrentPageChange = (e, value) => {
@@ -15,6 +16,7 @@ export default function Paginator() {
       count={numOfPages}
       color="primary"
       onChange={handleCurrentPageChange}
+      page={currentPage}
     />
   );
 }

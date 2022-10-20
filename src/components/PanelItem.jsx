@@ -92,6 +92,7 @@ export default function PanelItem(props) {
     },
   ];
 
+
   const panelAvailability = [
     {
       value: "Available",
@@ -253,6 +254,9 @@ export default function PanelItem(props) {
     }).then((response) => {
       setPanel(response.data);
     });
+    if (props.highlightPanel){
+      setOpenPanelModal(true)
+    }
   }, []);
 
   return (

@@ -64,6 +64,7 @@ const useStyles = makeStyles({
     bottom: `0px`,
     display: `flex`,
     padding: `10px`,
+    paddingLeft: `0px`,
     position: `fixed`,
     marginBottom: `10px`,
     width: `-webkit-fill-available`,
@@ -74,7 +75,7 @@ const useStyles = makeStyles({
     justifyContent: `flex-end`,
     alignContent: `flex-end`,
     flexGrow: 1,
-    paddingRight: `40px`,
+    paddingRight: `20px`,
   }
 });
 
@@ -85,6 +86,7 @@ export default function TestTable(props) {
   const [anchorEl, setAnchorEl] = useState(null);
   const currentPage = useSelector(state => state.paginator.currentPage)
   const numOfApplicantsPerPage = 2;
+  const searchParams = useSelector((state) => state.search.searchParams);
   const dispatch = useDispatch();
 
   const {
@@ -212,6 +214,24 @@ export default function TestTable(props) {
       dispatch(numOfPagesChanged(Math.ceil(response.data.applicants.length / numOfApplicantsPerPage)));
     });
   }, []);
+
+  // useEffect(() => {
+  //   axios({
+  //     method: "get",
+  //     url: `http://localhost:8000/api/interviews/?round=${roundId}&search=${searchParams}`,
+  //     headers: {
+  //       Authorization: "Token " + localStorage.getItem("token"),
+  //     },
+  //   }).then((response) => {
+  //     setApplicants(response.data)
+  //     dispatch(currentPageChanged(1));
+  //     dispatch(
+  //       numOfPagesChanged(
+  //         Math.ceil(response.data.length / numOfApplicantsPerPage)
+  //       )
+  //     );
+  //   });
+  // }, [searchParams])
 
   const testScoreModal = (
     <Modal

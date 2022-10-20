@@ -7,10 +7,11 @@ import TabPanel from "@mui/lab/TabPanel";
 import { makeStyles } from "@mui/styles";
 import TestTable from "../components/TestTable";
 import axios from "axios";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { titleChanged } from "../app/features/appBarSlice";
 import { Button } from "@mui/material";
 import { useParams } from "react-router-dom";
+import { fetchRounds, roundsVisibilityChanged, selectedSeasonIdChanged } from "../app/features/drawerSlice";
 
 const useStyles = makeStyles({
   testContainer: {
@@ -27,6 +28,15 @@ export default function Test(props) {
   const { testContainer } = useStyles();
   const { id, roundId } = useParams();
   const dispatch = useDispatch()
+  const initialSelectedSeasonId = useSelector(state => state.drawer.selectedSeasonId)
+
+  useEffect(() => {
+    if (initialSelectedSeasonId !== id){
+      dispatch(selectedSeasonIdChanged(id));
+      dispatch(fetchRounds());
+    }
+    dispatch(roundsVisibilityChanged(true));
+  }, [id]);
 
   useEffect(() => {
     axios({

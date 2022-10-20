@@ -23,7 +23,11 @@ export const fetchPanels = createAsyncThunk("panel/fetchPanels", () => {
 const panelSlice = createSlice({
     name: 'panel',
     initialState,
-    reducers: {},
+    reducers: {
+      panelsChanged: (state, action) => {
+        state.panels = action.payload
+      }
+    },
     extraReducers: (builder) => {
         builder.addCase(fetchPanels.pending, (state) => {
           state.loading = true;
@@ -40,3 +44,4 @@ const panelSlice = createSlice({
 })
 
 export default panelSlice.reducer
+export const { panelsChanged } = panelSlice.actions

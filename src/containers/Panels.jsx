@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { titleChanged } from "../app/features/appBarSlice";
-import { fetchPanels } from "../app/features/panelSlice";
+import { fetchPanels, panelsChanged } from "../app/features/panelSlice";
 import { makeStyles } from "@mui/styles";
 import { fetchedImgMembers } from "../app/features/imgMemberSlice";
 import {
@@ -91,6 +91,9 @@ const useStyles = makeStyles({
 });
 
 export default function Panels() {
+  const GETParams = new URLSearchParams(window.location.search)
+  const highlightedPanelId = GETParams.get("pid")
+
   const {
     mainContainer,
     questionsContainer,
@@ -134,6 +137,7 @@ export default function Panels() {
   const [refresh, setRefresh] = useState(0)
   const imgMembers = useSelector((state) => state.imgMember.imgMembers);
   const [selectedImgMembers, setSelectedImgMembers] = useState([])
+  const searchParams = useSelector(state => state.search.searchParams)
 
 
   const handleStatusChange = (event) => {
@@ -276,11 +280,20 @@ export default function Panels() {
     dispatch(titleChanged("Panels"));
   }, [refresh, ]);
 
+  useEffect(() => {
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/panels/?search=${searchParams}`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    })
+      .then((response) => {
+        dispatch(panelsChanged(response.data))
+    })
+  }, [searchParams])
+
   return (
-    // <div>
-    //   <Button onClick={() => setOpenPanelModal(true)}>+ Add Panel</Button>
-    //   {createPanelModal}
-    // </div>
     <div className={mainContainer}>
     <div className={questionsContainer}>
       <div className={headingContainer}>
@@ -303,6 +316,7 @@ export default function Panels() {
                 panel = {panel}
                 key={panel.id}
                 count={index + 1}
+                highlightPanel = {highlightedPanelId && highlightedPanelId === String(panel.id)}
               />
             ))
           : "No Panel Available"}

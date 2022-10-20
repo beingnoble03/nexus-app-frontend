@@ -7,6 +7,7 @@ import imgMemberReducer from './features/imgMemberSlice'
 import panelReducer from './features/panelSlice'
 import interviewReducer from './features/interviewSlice'
 import paginatorReducer from './features/paginatorSlice'
+import searchReducer from './features/searchSlice'
 
 const store = configureStore({
     reducer: {
@@ -18,6 +19,7 @@ const store = configureStore({
         panel: panelReducer,
         interview: interviewReducer,
         paginator: paginatorReducer,
+        search: searchReducer,
     },
 })
 

@@ -17,8 +17,11 @@ import { Modal, Box, Typography, TextField } from "@mui/material";
 import { fetchPanels } from "../app/features/panelSlice";
 import InterviewRow from "./InterviewRow";
 import { useParams } from "react-router-dom";
-import { currentPageChanged, numOfPagesChanged } from "../app/features/paginatorSlice";
-
+import {
+  currentPageChanged,
+  numOfPagesChanged,
+} from "../app/features/paginatorSlice";
+import moment from "moment";
 
 const useStyles = makeStyles({
   createRoundBtnContainer: {
@@ -64,8 +67,25 @@ export default function InterviewTable(props) {
   const { id, roundId } = useParams();
   const panel = useSelector((state) => state.panel);
   const dispatch = useDispatch();
-  const currentPage = useSelector(state => state.paginator.currentPage)
+  const currentPage = useSelector((state) => state.paginator.currentPage);
+  const searchParams = useSelector((state) => state.search.searchParams);
   const numOfApplicantsPerPage = 2;
+  const filterCompleted = useSelector(
+    (state) => state.interview.filterCompleted
+  );
+  const filterPending = useSelector((state) => state.interview.filterPending);
+  const filterMinTimeAssigned = useSelector(
+    (state) => state.interview.filterMinTimeAssigned
+  );
+  const filterMaxTimeAssigned = useSelector(
+    (state) => state.interview.filterMaxTimeAssigned
+  );
+  const filterMinTimeEntered = useSelector(
+    (state) => state.interview.filterMinTimeEntered
+  );
+  const filterMaxTimeEntered = useSelector(
+    (state) => state.interview.filterMaxTimeEntered
+  );
 
   const {
     createRoundBtnContainer,
@@ -95,41 +115,55 @@ export default function InterviewTable(props) {
   });
 
   const interviewStatusChoices = [
-      {
-          value: "Completed",
-          label: "Completed",
-      },
-      {
-          value: "Pending",
-          label: "Pending",
-      }
-  ]
+    {
+      value: "Completed",
+      label: "Completed",
+    },
+    {
+      value: "Pending",
+      label: "Pending",
+    },
+  ];
 
   const getEndOfList = () => {
-    if (currentPage*numOfApplicantsPerPage >= interviews.length) {
-      return interviews.length
+    if (currentPage * numOfApplicantsPerPage >= interviews.length) {
+      return interviews.length;
     }
-    return currentPage*numOfApplicantsPerPage
-  }
-
+    return currentPage * numOfApplicantsPerPage;
+  };
 
   useEffect(() => {
     axios({
       method: "get",
-      url: `http://localhost:8000/api/roundInterviews/${roundId}`,
+      url: `http://localhost:8000/api/interviews/?round=${roundId}&completed=${
+        filterCompleted ? filterCompleted : filterPending ? !filterPending : ""
+      }&search=${searchParams}&time_assigned_max=${filterMaxTimeAssigned ? moment(filterMaxTimeAssigned).toISOString() : ""}&time_assigned_min=${filterMinTimeAssigned ? moment(filterMinTimeAssigned).toISOString() : ""}&time_entered_max=${filterMaxTimeEntered ? moment(filterMaxTimeEntered).toISOString() : "" }&time_entered_min=${filterMinTimeEntered ? moment(filterMinTimeEntered).toISOString() : ""}`,
       headers: {
         Authorization: "Token " + localStorage.getItem("token"),
       },
     }).then((response) => {
-      setInterviews(response.data.interviews);
-      dispatch(currentPageChanged(1))
-      dispatch(numOfPagesChanged(Math.ceil(response.data.interviews.length / numOfApplicantsPerPage)));
+      setInterviews(response.data);
+      dispatch(currentPageChanged(1));
+      dispatch(
+        numOfPagesChanged(
+          Math.ceil(response.data.length / numOfApplicantsPerPage)
+        )
+      );
     });
+  }, [
+    filterCompleted,
+    searchParams,
+    roundId,
+    filterPending,
+    filterMinTimeAssigned,
+    filterMaxTimeAssigned,
+    filterMinTimeEntered,
+    filterMaxTimeEntered,
+  ]);
+
+  useEffect(() => {
     dispatch(fetchPanels());
-  }, []);
-
-
-
+  }, [roundId]);
 
   return (
     <>
@@ -151,9 +185,19 @@ export default function InterviewTable(props) {
           </TableHead>
           <TableBody>
             {interviews ? (
-              interviews.slice((currentPage-1)*numOfApplicantsPerPage, getEndOfList()).map((interview) => (
-                  <InterviewRow interview={interview} panelNames={panelNames} interviewStatusChoices={interviewStatusChoices} key={interview.id}/>
-              ))
+              interviews
+                .slice(
+                  (currentPage - 1) * numOfApplicantsPerPage,
+                  getEndOfList()
+                )
+                .map((interview) => (
+                  <InterviewRow
+                    interview={interview}
+                    panelNames={panelNames}
+                    interviewStatusChoices={interviewStatusChoices}
+                    key={interview.id}
+                  />
+                ))
             ) : (
               <></>
             )}
