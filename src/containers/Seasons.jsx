@@ -6,13 +6,15 @@ import axios from 'axios'
 import SeasonItem from '../components/SeasonItem'
 import { Typography } from '@mui/material'
 import { makeStyles } from '@mui/styles'
+import BlueBanner from '../components/BlueBanner'
 
 const useStyles = makeStyles({
   contentContainer: {
     width: `100%`,
-    height: `100%`,
     display: `flex`,
     flexWrap: `wrap`,
+    gap: `20px`,
+    padding: `20px`,
   },
 })
 export default function Seasons() {
@@ -51,7 +53,11 @@ export default function Seasons() {
         description={season.description}
         />
       )) : (
-        <Typography>Wait</Typography>
+        <div style={{
+          width: `100%`,
+        }}>
+        <BlueBanner message="No seasons available." />
+        </div>
       )
     }
     </div>
