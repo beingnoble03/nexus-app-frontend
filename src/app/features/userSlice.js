@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
 const userId = localStorage.getItem("userId")
@@ -18,6 +18,7 @@ const initialState = {
   userId,
   userName,
   userToken,
+  isMaster: false,
   error: null,
 };
 
@@ -32,6 +33,9 @@ const userSlice = createSlice({
     infoStored: (state, action) => {
       state.userName = action.payload["userName"]
       state.userId = action.payload["userId"]
+    },
+    isMasterChanged: (state, action) => {
+      state.isMaster = action.payload
     }
   },
   extraReducers:{
@@ -39,4 +43,4 @@ const userSlice = createSlice({
 });
 
 export default userSlice.reducer;
-export const { authenticated } = userSlice.actions;
+export const { authenticated, isMasterChanged } = userSlice.actions;

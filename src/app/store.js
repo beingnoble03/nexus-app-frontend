@@ -8,6 +8,7 @@ import panelReducer from './features/panelSlice'
 import interviewReducer from './features/interviewSlice'
 import paginatorReducer from './features/paginatorSlice'
 import searchReducer from './features/searchSlice'
+import testReducer from './features/testSlice'
 
 const store = configureStore({
     reducer: {
@@ -20,6 +21,7 @@ const store = configureStore({
         interview: interviewReducer,
         paginator: paginatorReducer,
         search: searchReducer,
+        test: testReducer,
     },
 })
 

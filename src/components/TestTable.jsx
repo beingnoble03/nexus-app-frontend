@@ -6,15 +6,53 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableContainer from "@mui/material/TableContainer";
 import axios from "axios";
-import { makeStyles } from "@mui/styles";
-import { Button, Box, Modal, TextField, Typography } from "@mui/material";
+import { makeStyles, styled } from "@mui/styles";
+import {
+  Button,
+  Box,
+  Modal,
+  TextField,
+  Typography,
+  Tooltip,
+  Checkbox,
+  MenuItem,
+} from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
 import { Popover } from "@mui/material";
 import "react-toastify/dist/ReactToastify.css";
 import { Link } from "react-router-dom";
 import Paginator from "./Paginator";
 import { useDispatch, useSelector } from "react-redux";
-import { currentPageChanged, numOfPagesChanged } from "../app/features/paginatorSlice";
+import {
+  currentPageChanged,
+  numOfPagesChanged,
+} from "../app/features/paginatorSlice";
+import { Badge, Fab, Switch } from "@mui/material";
+import { Close, Filter } from "@mui/icons-material";
+import {
+  filterEvaluatedToggled,
+  filterMaxMarksChanged,
+  filterMinMarksChanged,
+  filterNotEvaluatedToggled,
+} from "../app/features/testSlice";
+import ConfirmationModal from "./ConfirmationModal";
+
+const styleFiltersBox = {
+  position: "absolute",
+  bottom: "140px",
+  right: { sm: `20px` },
+  width: { xs: `95%`, sm: 580 },
+  marginLeft: { xs: `50%`, sm: `0px` },
+  transform: { xs: `translateX(-50%)`, sm: `translateX(0%)` },
+  bgcolor: "background.paper",
+  boxShadow: 24,
+  padding: `20px`,
+  borderRadius: `10px`,
+};
+
+const tableContainer = {
+  flexGrow: 1,
+};
 
 const style = {
   position: "absolute",
@@ -30,6 +68,32 @@ const style = {
   maxHeight: `90%`,
   overflow: `scroll`,
 };
+
+const footerStyle = {
+  display: `flex`,
+  flexDirection: `row`,
+  height: `auto`,
+  alignItems: `center`,
+  flexWrap: `wrap`,
+  gap: `20px`,
+  justifyContent: { xs: `center`, sm: `` },
+};
+
+const paginatorContainerStyle = {
+  display: `flex`,
+  justifyContent: `flex-end`,
+  alignContent: `flex-end`,
+  flexGrow: { sm: `1` },
+};
+
+const StyledBadge = styled(Badge)(({ theme }) => ({
+  "& .MuiBadge-badge": {
+    right: 10,
+    top: 5,
+    padding: "0 4px",
+    zIndex: 1300,
+  },
+}));
 
 const useStyles = makeStyles({
   createRoundBtnContainer: {
@@ -60,23 +124,70 @@ const useStyles = makeStyles({
   assigneeTypography: {
     marginTop: `10px !important`,
   },
-  footer:{
-    bottom: `0px`,
+  footer: {
     display: `flex`,
-    padding: `10px`,
-    paddingLeft: `0px`,
-    position: `fixed`,
-    marginBottom: `10px`,
-    width: `-webkit-fill-available`,
+    flexDirection: `row`,
+    height: `auto`,
+    alignItems: `center`,
     flexWrap: `wrap`,
+    gap: `20px`,
   },
   paginatorConatiner: {
     display: `flex`,
     justifyContent: `flex-end`,
     alignContent: `flex-end`,
     flexGrow: 1,
-    paddingRight: `20px`,
-  }
+  },
+  floatingBtnContainer: {
+    display: `flex`,
+    width: `100%`,
+    justifyContent: `flex-end`,
+    paddingBottom: `25px`,
+  },
+  switchAndLabelContainer: {
+    display: `flex`,
+    flexDirection: `row`,
+    alignItems: `center`,
+  },
+  filterMainContainer: {
+    display: `flex`,
+    padding: `10px`,
+    flexDirection: `column`,
+  },
+  completeSwicthContainer: {
+    display: `flex`,
+    flexDirection: `row`,
+    flexWrap: `wrap`,
+    gap: `15px`,
+    paddingLeft: `10px`,
+    paddingTop: `10px`,
+  },
+  headingContainer: {
+    display: `flex`,
+    width: `100%`,
+    justifyContent: `space-between`,
+    alignItems: `center`,
+    flexDirection: `row`,
+  },
+  marksFilterContainer: {
+    display: `flex`,
+    flexDirection: `column`,
+    flexWrap: `wrap`,
+    gap: `10px`,
+  },
+  inputMarksContainer: {
+    display: `flex`,
+    flexDirection: `row`,
+    justifyContent: `space-between`,
+    gap: `20px`,
+  },
+  moveSelectedRowsContainer: {
+    display: `flex`,
+    minWidth: `300px`,
+    justifyContent: `space-between`,
+    flexDirection: `row`,
+    alignItems: `center`,
+  },
 });
 
 export default function TestTable(props) {
@@ -84,9 +195,21 @@ export default function TestTable(props) {
   const [testScore, setTestScore] = useState(null);
   const [open, setOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-  const currentPage = useSelector(state => state.paginator.currentPage)
+  const currentPage = useSelector((state) => state.paginator.currentPage);
   const numOfApplicantsPerPage = 2;
   const searchParams = useSelector((state) => state.search.searchParams);
+  const numOfFiltersApplied = useSelector(
+    (state) => state.test.numOfFiltersApplied
+  );
+  const [openFiltersModal, setOpenFiltersModal] = useState(false);
+  const filterEvaluated = useSelector((state) => state.test.filterEvaluated);
+  const filterNotEvaluated = useSelector(
+    (state) => state.test.filterNotEvaluated
+  );
+  const [isMaster, setIsMaster] = useState(false);
+  const filterMinMarks = useSelector((state) => state.test.filterMinMarks);
+  const filterMaxMarks = useSelector((state) => state.test.filterMaxMarks);
+  const rounds = useSelector((state) => state.drawer.rounds);
   const dispatch = useDispatch();
 
   const {
@@ -98,14 +221,22 @@ export default function TestTable(props) {
     assigneeTypography,
     footer,
     paginatorConatiner,
+    floatingBtnContainer,
+    switchAndLabelContainer,
+    filterMainContainer,
+    completeSwicthContainer,
+    headingContainer,
+    marksFilterContainer,
+    inputMarksContainer,
+    moveSelectedRowsContainer,
   } = useStyles();
 
   const getEndOfList = () => {
-    if (currentPage*numOfApplicantsPerPage >= applicants.length) {
-      return applicants.length
+    if (currentPage * numOfApplicantsPerPage >= applicants.length) {
+      return applicants.length;
     }
-    return currentPage*numOfApplicantsPerPage
-  }
+    return currentPage * numOfApplicantsPerPage;
+  };
 
   const handlePopoverOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -115,7 +246,38 @@ export default function TestTable(props) {
     setAnchorEl(null);
   };
 
-  const openPopover = Boolean(anchorEl);
+  const handleFilterEvaluated = (event) => {
+    dispatch(filterEvaluatedToggled(event.target.checked));
+  };
+
+  const handleFilterNotEvaluated = (event) => {
+    dispatch(filterNotEvaluatedToggled(event.target.checked));
+  };
+
+  const handleFilterMinMarks = (event) => {
+    dispatch(
+      filterMinMarksChanged(
+        event.target.value === "" ? null : Number(event.target.value)
+      )
+    );
+  };
+
+  const handleFilterMaxMarks = (event) => {
+    dispatch(
+      filterMaxMarksChanged(
+        event.target.value === "" ? null : Number(event.target.value)
+      )
+    );
+  };
+
+  const [selectedRound, setSelectedRound] = useState("");
+
+  const handleChangeRound = (event) => {
+    setSelectedRound(event.target.value);
+    if (selectedRows.length) {
+      setOpenConfirmationModal(true);
+    }
+  };
 
   const handleTableRowClick = (applicantId) => {
     axios({
@@ -201,37 +363,131 @@ export default function TestTable(props) {
       });
   };
 
+  const filtersModal = (
+    <Modal
+      open={openFiltersModal}
+      onClose={() => setOpenFiltersModal(false)}
+      aria-labelledby="modal-modal-title"
+      aria-describedby="modal-modal-description"
+      hideBackdrop={true}
+    >
+      <Box sx={styleFiltersBox}>
+        <div className={headingContainer}>
+          <Typography id="modal-modal-title" variant="h6" component="h2">
+            Filters
+          </Typography>
+          <div
+            onClick={() => setOpenFiltersModal(false)}
+            style={{
+              cursor: `pointer`,
+            }}
+          >
+            <Close />
+          </div>
+        </div>
+        <div className={filterMainContainer}>
+          {isMaster && (
+            <div className={marksFilterContainer}>
+              <Typography>
+                <b>Based on Marks</b>
+              </Typography>
+              <div className={inputMarksContainer}>
+                <TextField
+                  variant="filled"
+                  label="Minimum Marks"
+                  value={filterMinMarks === null ? "" : filterMinMarks}
+                  onChange={handleFilterMinMarks}
+                  sx={{
+                    width: `100%`,
+                  }}
+                />
+                <TextField
+                  variant="filled"
+                  label="Maximum Marks"
+                  value={filterMaxMarks === null ? "" : filterMaxMarks}
+                  onChange={handleFilterMaxMarks}
+                  sx={{
+                    width: `100%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          <Typography
+            sx={{
+              marginTop: `15px`,
+            }}
+          >
+            <b>Based on Evaluation</b>
+          </Typography>
+          <div className={completeSwicthContainer}>
+            <div className={switchAndLabelContainer}>
+              <Typography variant="subtitle1">Show only Evaluated</Typography>
+              <Switch
+                onChange={handleFilterEvaluated}
+                checked={filterEvaluated}
+                color="primary"
+                disabled={filterNotEvaluated}
+              />
+            </div>
+            <div className={switchAndLabelContainer}>
+              <Typography variant="subtitle1">
+                Show only Not Evaluated
+              </Typography>
+              <Switch
+                onChange={handleFilterNotEvaluated}
+                checked={filterNotEvaluated}
+                color="primary"
+                disabled={filterEvaluated}
+              />
+            </div>
+          </div>
+        </div>
+      </Box>
+    </Modal>
+  );
+
   useEffect(() => {
     axios({
       method: "get",
-      url: `http://localhost:8000/api/testApplicants/${props.testId}`,
+      url: `http://localhost:8000/api/testApplicants/${
+        props.testId
+      }?search=${searchParams}&evaluated=${
+        filterEvaluated ? "true" : filterNotEvaluated ? "false" : ""
+      }&min_marks=${filterMinMarks === null ? "" : filterMinMarks}&max_marks=${
+        filterMaxMarks === null ? "" : filterMaxMarks
+      }`,
       headers: {
         Authorization: "Token " + localStorage.getItem("token"),
       },
     }).then((response) => {
       setApplicants(response.data.applicants);
-      dispatch(currentPageChanged(1))
-      dispatch(numOfPagesChanged(Math.ceil(response.data.applicants.length / numOfApplicantsPerPage)));
+      dispatch(currentPageChanged(1));
+      dispatch(
+        numOfPagesChanged(
+          Math.ceil(response.data.applicants.length / numOfApplicantsPerPage)
+        )
+      );
+    });
+  }, [
+    searchParams,
+    filterEvaluated,
+    filterNotEvaluated,
+    filterMinMarks,
+    filterMaxMarks,
+  ]);
+
+  useEffect(() => {
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/current_user/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    }).then((response) => {
+      setIsMaster(response.data[0].is_master);
     });
   }, []);
-
-  // useEffect(() => {
-  //   axios({
-  //     method: "get",
-  //     url: `http://localhost:8000/api/interviews/?round=${roundId}&search=${searchParams}`,
-  //     headers: {
-  //       Authorization: "Token " + localStorage.getItem("token"),
-  //     },
-  //   }).then((response) => {
-  //     setApplicants(response.data)
-  //     dispatch(currentPageChanged(1));
-  //     dispatch(
-  //       numOfPagesChanged(
-  //         Math.ceil(response.data.length / numOfApplicantsPerPage)
-  //       )
-  //     );
-  //   });
-  // }, [searchParams])
 
   const testScoreModal = (
     <Modal
@@ -288,14 +544,20 @@ export default function TestTable(props) {
                         ? "Obtained Marks [EVALUATED BEFORE]"
                         : "Obtained Marks"
                     }
-                    color={question.obtained_marks || question.obtained_marks === 0 ? "error" : "primary"}
+                    color={
+                      question.obtained_marks || question.obtained_marks === 0
+                        ? "error"
+                        : "primary"
+                    }
                     variant="filled"
                     key={questionIndex}
                     className={inputTestModal}
                     defaultValue={
                       question.obtained_marks
                         ? String(question.obtained_marks)
-                        : question.obtained_marks === 0 ? "0" : ""
+                        : question.obtained_marks === 0
+                        ? "0"
+                        : ""
                     }
                     type="number"
                   />
@@ -317,7 +579,7 @@ export default function TestTable(props) {
                   </Typography>
                   {question.assignee.length ? (
                     question.assignee.map((member, index) => (
-                      <>
+                      <Tooltip title={member.name}>
                         <img
                           className={assigneeImage}
                           src={member.image}
@@ -325,33 +587,7 @@ export default function TestTable(props) {
                           onMouseEnter={handlePopoverOpen}
                           onMouseLeave={handlePopoverClose}
                         />
-                        <Popover
-                          id="mouse-over-popover"
-                          sx={{
-                            pointerEvents: "none",
-                          }}
-                          open={openPopover}
-                          anchorEl={anchorEl}
-                          anchorOrigin={{
-                            vertical: "bottom",
-                            horizontal: "center",
-                          }}
-                          transformOrigin={{
-                            vertical: "top",
-                            horizontal: "center",
-                          }}
-                          key={"popover-1-" + String(questionIndex)}
-                          onClose={handlePopoverClose}
-                          disableRestoreFocus
-                        >
-                          <Typography
-                            sx={{ p: 1 }}
-                            key={"typography-8-" + String(questionIndex)}
-                          >
-                            {member.name}
-                          </Typography>
-                        </Popover>
-                      </>
+                      </Tooltip>
                     ))
                   ) : (
                     <>No member assigned</>
@@ -370,42 +606,96 @@ export default function TestTable(props) {
     </Modal>
   );
 
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [openConfirmationModal, setOpenConfirmationModal] = useState(false);
+
+  const handleSelectAllRows = (event) => {
+    if (event.target.checked) {
+      setSelectedRows(applicants.map((applicant) => String(applicant.id)));
+    } else {
+      setSelectedRows([]);
+    }
+  };
+
+  const handleSelectRow = (event) => {
+    if (event.target.checked) {
+      setSelectedRows((prevState) => [...prevState, event.target.value]);
+    } else {
+      setSelectedRows((prevState) =>
+        prevState.filter((applicantId) => applicantId !== event.target.value)
+      );
+    }
+    console.log(selectedRows);
+  };
+
   return (
     <>
-      <TableContainer>
+      <TableContainer sx={tableContainer}>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
           <TableHead>
             <TableRow>
-              <TableCell align="center">ID</TableCell>
+              <TableCell align="center">
+                <Checkbox
+                  color="primary"
+                  indeterminate={
+                    applicants &&
+                    selectedRows.length > 0 &&
+                    selectedRows.length < applicants.length
+                  }
+                  checked={
+                    applicants && applicants.length === selectedRows.length
+                  }
+                  onChange={handleSelectAllRows}
+                />
+              </TableCell>
               <TableCell align="center">Name</TableCell>
               <TableCell align="center">Enrolment Number</TableCell>
               <TableCell align="center">Mobile</TableCell>
               <TableCell align="center">Status</TableCell>
+              <TableCell align="center">Edit Marks</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {applicants ? (
-              applicants.slice((currentPage-1)*numOfApplicantsPerPage, getEndOfList()).map((applicant) => (
-                <TableRow
-                  key={applicant.id}
-                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                  role="checkbox"
-                  tabIndex={-1}
-                  aria-checked={true}
-                  selected={true}
-                  onClick={() => handleTableRowClick(applicant.id)}
-                >
-                  <TableCell component="th" scope="row" align="center">
-                    {applicant.id}
-                  </TableCell>
-                  <TableCell align="center">{applicant.name}</TableCell>
-                  <TableCell align="center">
-                    {applicant.enrolment_number}
-                  </TableCell>
-                  <TableCell align="center">{applicant.mobile}</TableCell>
-                  <TableCell align="center">{applicant.status}</TableCell>
-                </TableRow>
-              ))
+              applicants
+                .slice(
+                  (currentPage - 1) * numOfApplicantsPerPage,
+                  getEndOfList()
+                )
+                .map((applicant) => (
+                  <TableRow
+                    key={applicant.id}
+                    sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                    role="checkbox"
+                    tabIndex={-1}
+                    aria-checked={true}
+                    selected={true}
+                  >
+                    <TableCell component="th" scope="row" align="center">
+                      <Checkbox
+                        color="primary"
+                        checked={
+                          selectedRows.indexOf(String(applicant.id)) !== -1
+                        }
+                        onClick={handleSelectRow}
+                        value={applicant.id}
+                      />
+                    </TableCell>
+                    <TableCell align="center">{applicant.name}</TableCell>
+                    <TableCell align="center">
+                      {applicant.enrolment_number}
+                    </TableCell>
+                    <TableCell align="center">{applicant.mobile}</TableCell>
+                    <TableCell align="center">{applicant.status}</TableCell>
+                    <TableCell align="center">
+                      <Button
+                        onClick={() => handleTableRowClick(applicant.id)}
+                      >
+                        Edit Marks
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
             ) : (
               <></>
             )}
@@ -426,14 +716,79 @@ export default function TestTable(props) {
         theme="light"
       />
 
-      <div className={footer}>
-        <Link to={`/season/${props.seasonId}/test/${props.testId}/questions/`}>
-        <Button variant="contained">View Questions and Assignees</Button>
-        </Link>
-        <div className={paginatorConatiner}>
-        <Paginator />
-        </div>
+      <div className={floatingBtnContainer}>
+        <StyledBadge badgeContent={numOfFiltersApplied} color="secondary">
+          <Fab
+            variant="extended"
+            color="primary"
+            style={{
+              width: `fit-content`,
+            }}
+            onClick={() => setOpenFiltersModal(true)}
+          >
+            <Filter sx={{ mr: 1 }} />
+            Filters
+          </Fab>
+        </StyledBadge>
       </div>
+      {filtersModal}
+      <Box sx={footerStyle}>
+        <Link
+          to={`/season/${props.seasonId}/test/${props.testId}/questions/`}
+          style={{
+            textDecoration: `none`,
+          }}
+        >
+          <Button variant="contained">View Questions and Assignees</Button>
+        </Link>
+        <div className={moveSelectedRowsContainer}>
+          <Typography
+            variant="subtitle1"
+            color={selectedRows.length ? "black" : "GrayText"}
+          >
+            <b>{selectedRows.length}</b> Selected
+          </Typography>
+          <TextField
+            id="input-selected-section"
+            select
+            label="Move to"
+            value={selectedRound}
+            onChange={handleChangeRound}
+            variant="outlined"
+            sx={{
+              width: `200px`,
+            }}
+            size="small"
+          >
+            {rounds
+              .filter((round) => String(round.id) !== props.roundId)
+              .map((round, index) => (
+                <MenuItem key={index} value={round.id}>
+                  {round.round_name.length > 25
+                    ? round.round_name.substr(0, 25) + "..."
+                    : round.round_name}
+                </MenuItem>
+              ))}
+          </TextField>
+        </div>
+        <Box sx={paginatorContainerStyle}>
+          <Paginator />
+        </Box>
+      </Box>
+      <ConfirmationModal
+        roundName={
+          selectedRound &&
+          rounds.filter((round) => round.id === selectedRound)[0].round_name
+        }
+        roundType={
+          selectedRound &&
+          rounds.filter((round) => round.id === selectedRound)[0].round_type
+        }
+        openConfirmationModal={openConfirmationModal}
+        setOpenConfirmationModal={setOpenConfirmationModal}
+        applicantIds={selectedRows}
+        roundId={selectedRound}
+      />
     </>
   );
 }
