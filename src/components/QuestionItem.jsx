@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Typography, Button } from "@mui/material";
+import { Typography, Button, Card, CardContent, CardActions } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { TextField, MenuItem, Checkbox } from "@mui/material";
 import axios from "axios";
 import { Modal, Box } from "@mui/material";
-
 
 const style = {
   position: "absolute",
@@ -63,6 +62,15 @@ const useStyles = makeStyles({
     maxHeight: `200px`,
     overflow: `scroll`,
   },
+  card: {
+    width: `350px`,
+    transition: "0.3s",
+    boxShadow: "0 8px 40px -12px rgba(0,0,0,0.3)",
+    "&:hover": {
+      boxShadow: "0 16px 70px -12.125px rgba(0,0,0,0.3)",
+    },
+    padding: `10px`,
+  },
 });
 
 export default function QuestionItem(props) {
@@ -74,158 +82,177 @@ export default function QuestionItem(props) {
     inputQuestionTitle,
     saveQuestionBtnContainer,
     imgMembersContainer,
+    card,
   } = useStyles();
 
   const [openQuestionModal, setOpenQuestionModal] = useState(false);
   const imgMembers = useSelector((state) => state.imgMember.imgMembers);
-  const [question, setQuestion] = useState(null)
-  const [selectedImgMembers, setSelectedImgMembers] = useState([])
-
+  const [question, setQuestion] = useState(null);
+  const [selectedImgMembers, setSelectedImgMembers] = useState([]);
 
   const handleModalClose = () => {
-    setOpenQuestionModal(false)
-    setSelectedImgMembers([])
-  }
+    setOpenQuestionModal(false);
+    setSelectedImgMembers([]);
+  };
 
   const handleModalOpen = () => {
-    setOpenQuestionModal(true)
-    setSelectedImgMembers(question.assignee)
-  }
+    setOpenQuestionModal(true);
+    setSelectedImgMembers(question.assignee);
+  };
 
   const handleCheckboxChange = (event) => {
     if (event.target.checked) {
-      setSelectedImgMembers(prevState => [...prevState, parseInt(event.target.value)])
+      setSelectedImgMembers((prevState) => [
+        ...prevState,
+        parseInt(event.target.value),
+      ]);
     } else {
-      setSelectedImgMembers(prevState => prevState.filter(id_ => id_ !== parseInt(event.target.value)))
+      setSelectedImgMembers((prevState) =>
+        prevState.filter((id_) => id_ !== parseInt(event.target.value))
+      );
     }
-}
+  };
 
   const handleSaveQuestion = () => {
-      const maximumMarks = document.getElementById("input-question-maximum-marks").value
-      const title = document.getElementById("input-question-title").value
-      axios({
-        method: "patch",
-        url: `http://localhost:8000/api/questions/${question.id}/`,
-        headers: {
-          Authorization: "Token " + localStorage.getItem("token"),
-        },
-        data: {
-            title,
-            "maximum_marks": maximumMarks,
-            section: question.section,
-            assignee: selectedImgMembers,
-        },
-      })
-        .then((response) => {
-            console.log(response.data)
-            setQuestion(response.data)
-            setOpenQuestionModal(false)
-    })
-  }
+    const maximumMarks = document.getElementById(
+      "input-question-maximum-marks"
+    ).value;
+    const title = document.getElementById("input-question-title").value;
+    axios({
+      method: "patch",
+      url: `http://localhost:8000/api/questions/${question.id}/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+      data: {
+        title,
+        maximum_marks: maximumMarks,
+        section: question.section,
+        assignee: selectedImgMembers,
+      },
+    }).then((response) => {
+      console.log(response.data);
+      setQuestion(response.data);
+      setOpenQuestionModal(false);
+    });
+  };
 
   useEffect(() => {
-      axios({
-          method: `get`,
-          url: `http://localhost:8000/api/questions/${props.id}/`,
-          headers: {
-            Authorization: "Token " + localStorage.getItem("token"),
-          },
-      }). then((response) => {
-          setQuestion(response.data)
-      })
-  }, [])
+    axios({
+      method: `get`,
+      url: `http://localhost:8000/api/questions/${props.id}/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    }).then((response) => {
+      setQuestion(response.data);
+    });
+  }, []);
 
   const questionModal = (
-      <>
-      { question && 
-      <Modal
-        open={openQuestionModal}
-        onClose={handleModalClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box sx={style}>
-          <Typography id="modal-modal-title" variant="h6" component="h2">
-            Editing Question
-          </Typography>
-          <TextField
-            id="input-question-title"
-            label="Question Title"
-            variant="filled"
-            className={inputQuestionTitle}
-            defaultValue={question.title}
-          />
+    <>
+      {question && (
+        <Modal
+          open={openQuestionModal}
+          onClose={handleModalClose}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box sx={style}>
+            <Typography id="modal-modal-title" variant="h6" component="h2">
+              Editing Question
+            </Typography>
+            <TextField
+              id="input-question-title"
+              label="Question Title"
+              variant="filled"
+              className={inputQuestionTitle}
+              defaultValue={question.title}
+            />
 
             <TextField
-            id="input-question-maximum-marks"
-            label="Question Maximum Marks"
-            variant="filled"
-            className={inputQuestionTitle}
-            defaultValue={question.maximum_marks}
-          />
-          <Typography variant="subtitle1">
-            <b>Assignee</b>
-          </Typography>
-          <div className={imgMembersContainer}>
-            {imgMembers.map((imgMember, index) => (
-              <>{imgMember.name && 
-                <div key={index}>
-                  <Checkbox 
-                defaultChecked={question.assignee.indexOf(imgMember.id) !== -1}
-                onChange={handleCheckboxChange}
-                value={imgMember.id}
-                />{imgMember.name}</div>}</>
-            ))}
-          </div>
-          <div className={saveQuestionBtnContainer}>
-            <Button variant="contained" onClick={handleSaveQuestion}>Save</Button>
-          </div>
-        </Box>
-      </Modal>
-            }
-        </>
+              id="input-question-maximum-marks"
+              label="Question Maximum Marks"
+              variant="filled"
+              className={inputQuestionTitle}
+              defaultValue={question.maximum_marks}
+            />
+            <Typography variant="subtitle1">
+              <b>Assignee</b>
+            </Typography>
+            <div className={imgMembersContainer}>
+              {imgMembers.map((imgMember, index) => (
+                <>
+                  {imgMember.name && (
+                    <div key={index}>
+                      <Checkbox
+                        defaultChecked={
+                          question.assignee.indexOf(imgMember.id) !== -1
+                        }
+                        onChange={handleCheckboxChange}
+                        value={imgMember.id}
+                      />
+                      {imgMember.name}
+                    </div>
+                  )}
+                </>
+              ))}
+            </div>
+            <div className={saveQuestionBtnContainer}>
+              <Button variant="contained" onClick={handleSaveQuestion}>
+                Save
+              </Button>
+            </div>
+          </Box>
+        </Modal>
+      )}
+    </>
   );
 
   return (
-    <div className={mainContainer}>
-        { question && 
-        <>
-      <Typography variant="h6">
-        <b>Question {props.count}</b>
-      </Typography>
-      <Typography variant="h6">{question.title}</Typography>
-      <Typography variant="subtitle1">
-        <b>Maximum Marks</b>
-      </Typography>
-      <Typography>
-          {question.maximum_marks}
-      </Typography>
-      <Typography variant="subtitle1">
-        <b>Assignee</b>
-      </Typography>
-      <div className={badgeContainer}>
-        {question.assignee_details.length ? (
-          question.assignee_details.map((member, index) => (
-            <div
-              className={assigneeBadge}
-              key={String(index)}
-            >
-              <img className={assigneeImage} src={member.image} />
-              <Typography sx={{ p: 1 }}>
-                <b>{member.name}</b>
-              </Typography>
-            </div>
-          ))
-        ) : (
-          <>No member assigned</>
-        )}
-      </div>
-      <Button variant="contained" onClick={handleModalOpen}>
-        Edit
-      </Button>
-      </>
-}
+    <Card className={card}>
+      {question && (
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            <b>Question {props.count}</b>
+          </Typography>
+          <Typography variant="h6">{question.title}</Typography>
+          <Typography variant="subtitle1">
+            <b>Maximum Marks</b>
+          </Typography>
+          <Typography>{question.maximum_marks}</Typography>
+          <Typography variant="subtitle1">
+            <b>Assignee</b>
+          </Typography>
+          <div className={badgeContainer}>
+            {question.assignee_details.length ? (
+              question.assignee_details.map((member, index) => (
+                <div className={assigneeBadge} key={String(index)}>
+                  <img className={assigneeImage} src={member.image} />
+                  <Typography sx={{ p: 1 }}>
+                    <b>{member.name}</b>
+                  </Typography>
+                </div>
+              ))
+            ) : (
+              <>No member assigned</>
+            )}
+          </div>
+        </CardContent>
+      )}
+      <CardActions>
+      <Button
+            variant="contained"
+            size="small"
+            onClick={handleModalOpen}
+            sx={{
+              marginBottom: `0px`,
+            }}
+          >
+            Edit
+          </Button>
+      </CardActions>
       {questionModal}
-    </div>
+    </Card>
   );
 }

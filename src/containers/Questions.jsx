@@ -10,6 +10,7 @@ import { fetchedImgMembers } from "../app/features/imgMemberSlice";
 import { Modal, Box } from "@mui/material";
 import { titleChanged } from "../app/features/appBarSlice";
 import { fetchRounds, roundsVisibilityChanged, selectedSeasonIdChanged } from "../app/features/drawerSlice";
+import BlueBanner from "../components/BlueBanner";
 
 const style = {
   position: "absolute",
@@ -32,16 +33,9 @@ const useStyles = makeStyles({
   },
   questionsContainer: {
     display: `flex`,
-    flexGrow: 1,
     width: `100%`,
     flexDirection: `column`,
-  },
-  saveBtnContainer: {
-    display: `flex`,
-    padding: `20px`,
-    width: `100%`,
-    justifyContent: `flex-end`,
-    flexDirection: `row`,
+    overflow: `scroll`,
   },
   headingContainer: {
     display: `flex`,
@@ -50,6 +44,7 @@ const useStyles = makeStyles({
     flexDirection: `row`,
     justifyContent: `space-between`,
     flexWrap: `wrap`,
+    alignItems: `center`,
   },
   headingButtonsContainer: {
     display: `flex`,
@@ -86,13 +81,15 @@ const useStyles = makeStyles({
     maxHeight: `200px`,
     overflow: `scroll`,
   },
+  blueBannerContainer: {
+    width: `100%`,
+  }
 });
 
 export default function Questions(props) {
   const {
     mainContainer,
     questionsContainer,
-    saveBtnContainer,
     headingContainer,
     questionItemContainer,
     headingButtonsContainer,
@@ -100,6 +97,7 @@ export default function Questions(props) {
     inputQuestionTitle,
     saveQuestionBtnContainer,
     imgMembersContainer,
+    blueBannerContainer,
   } = useStyles();
 
   const { id, testId } = useParams();
@@ -315,11 +313,9 @@ export default function Questions(props) {
                   count={index + 1}
                 />
               ))
-            : "Select a section to find questions"}
+            : 
+            <div className={blueBannerContainer}><BlueBanner message="No section selected. Select section to find questions."/></div>}
         </div>
-      </div>
-      <div className={saveBtnContainer}>
-        <Button variant="contained">Save Changes</Button>
       </div>
       {createQuestionModal}
       {createSectionModal}
