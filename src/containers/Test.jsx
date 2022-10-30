@@ -16,6 +16,7 @@ import {
   roundsVisibilityChanged,
   selectedSeasonIdChanged,
 } from "../app/features/drawerSlice";
+import BlueBanner from "../components/BlueBanner";
 
 const styleTabPanel = {
   display: `flex`,
@@ -220,6 +221,9 @@ export default function Test(props) {
           </Box>
           {testPanels}
         </TabContext>
+        { !testTitles.length && 
+        <BlueBanner message="No Tests available for the selected round. Press Add Test button to add." />
+        }
         {createTestModal}
       </div>
     </div>

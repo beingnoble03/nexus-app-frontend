@@ -16,8 +16,15 @@ import {
   Tooltip,
   Checkbox,
   MenuItem,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Card,
+  InputAdornment,
+  CardContent,
+  Chip,
 } from "@mui/material";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { Popover } from "@mui/material";
 import "react-toastify/dist/ReactToastify.css";
 import { Link } from "react-router-dom";
@@ -34,8 +41,13 @@ import {
   filterMaxMarksChanged,
   filterMinMarksChanged,
   filterNotEvaluatedToggled,
+  filterTopTestsChanged,
 } from "../app/features/testSlice";
 import ConfirmationModal from "./ConfirmationModal";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { Score } from "@mui/icons-material";
+import BlueBanner from "./BlueBanner";
+import {Add} from "@mui/icons-material"
 
 const styleFiltersBox = {
   position: "absolute",
@@ -59,7 +71,22 @@ const style = {
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: { xs: 350, sm: 550 },
+  width: { xs: 350, sm: `80%` },
+  bgcolor: "background.paper",
+  border: "1px solid #000",
+  boxShadow: 24,
+  p: 4,
+  borderRadius: `10px`,
+  maxHeight: `90%`,
+  overflow: `scroll`,
+};
+
+const addApplicantStyle = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: { xs: 350, sm: `400px` },
   bgcolor: "background.paper",
   border: "1px solid #000",
   boxShadow: 24,
@@ -110,7 +137,7 @@ const useStyles = makeStyles({
     padding: `5px`,
   },
   applicantDetialsContainer: {
-    marginTop: `10px`,
+    margin: `20px 0px`,
     padding: `5px 10px`,
     border: `1px solid #e9f5f1`,
     borderRadius: `5px`,
@@ -143,11 +170,13 @@ const useStyles = makeStyles({
     width: `100%`,
     justifyContent: `flex-end`,
     paddingBottom: `25px`,
+    paddingTop: `20px`,
   },
   switchAndLabelContainer: {
     display: `flex`,
     flexDirection: `row`,
     alignItems: `center`,
+    margin: `10px 0px`,
   },
   filterMainContainer: {
     display: `flex`,
@@ -188,11 +217,37 @@ const useStyles = makeStyles({
     flexDirection: `row`,
     alignItems: `center`,
   },
+  questionsContainer: {
+    display: `flex`,
+    flexGrow: 1,
+    width: `100%`,
+    padding: `15px`,
+    flexWrap: `wrap`,
+    gap: `30px`,
+    overflow: `scroll`,
+  },
+  card: {
+    width: `320px`,
+    transition: "0.3s",
+    boxShadow: "0 8px 40px -12px rgba(0,0,0,0.3)",
+    "&:hover": {
+      boxShadow: "0 16px 70px -12.125px rgba(0,0,0,0.3)",
+    },
+    padding: `10px`,
+    cursor: `pointer`,
+    backgroundColor: `#F8F8FF !important`,
+  },
+  saveQuestionBtnContainer: {
+    display: `flex`,
+    justifyContent: `flex-end`,
+    marginTop: `15px`,
+  },
 });
 
 export default function TestTable(props) {
   const [applicants, setApplicants] = useState(null);
   const [testScore, setTestScore] = useState(null);
+  const [openAddApplicantModal, setOpenAddApplicantModal] = useState(false);
   const [open, setOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const currentPage = useSelector((state) => state.paginator.currentPage);
@@ -210,17 +265,15 @@ export default function TestTable(props) {
   const filterMinMarks = useSelector((state) => state.test.filterMinMarks);
   const filterMaxMarks = useSelector((state) => state.test.filterMaxMarks);
   const rounds = useSelector((state) => state.drawer.rounds);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const dispatch = useDispatch();
 
   const {
     createRoundBtnContainer,
     inputTestModal,
-    sectionContentContainer,
     applicantDetialsContainer,
     assigneeImage,
     assigneeTypography,
-    footer,
-    paginatorConatiner,
     floatingBtnContainer,
     switchAndLabelContainer,
     filterMainContainer,
@@ -229,6 +282,9 @@ export default function TestTable(props) {
     marksFilterContainer,
     inputMarksContainer,
     moveSelectedRowsContainer,
+    questionsContainer,
+    card,
+    saveQuestionBtnContainer,
   } = useStyles();
 
   const getEndOfList = () => {
@@ -269,6 +325,16 @@ export default function TestTable(props) {
       )
     );
   };
+
+  const handleFilterTopTests = (event) => {
+    dispatch(
+      filterTopTestsChanged(
+        event.target.value === "" ? null : Number(event.target.value)
+      )
+    );
+  };
+
+  const filterTopTests = useSelector((state) => state.test.filterTopTests);
 
   const [selectedRound, setSelectedRound] = useState("");
 
@@ -346,6 +412,7 @@ export default function TestTable(props) {
           draggable: true,
           progress: undefined,
           theme: "light",
+          toastId: "success1",
         });
         setOpen(false);
       })
@@ -410,6 +477,16 @@ export default function TestTable(props) {
                     width: `100%`,
                   }}
                 />
+                <TextField
+                  variant="filled"
+                  label="Show top x% Applicants"
+                  placeholder="Enter x"
+                  value={filterTopTests === null ? "" : filterTopTests}
+                  onChange={handleFilterTopTests}
+                  sx={{
+                    width: `100%`,
+                  }}
+                />
               </div>
             </div>
           )}
@@ -447,6 +524,117 @@ export default function TestTable(props) {
     </Modal>
   );
 
+  const handleAddApplicants = () => {
+    var formData = new FormData();
+    let csvFile = document.getElementById("csv-file-upload").files[0];
+    formData.append("csvFile", csvFile);
+    formData.append("round_id", props.roundId);
+
+    axios({
+      method: "post",
+      url: `http://localhost:8000/api/applicants/csvFile/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+        "Content-Type": "multipart/form-data",
+      },
+      data: formData,
+    }).then((response) => {
+      toast.success("Applicants added successfully.", {
+        position: "bottom-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        toastId: "success1",
+      });
+      setOpenAddApplicantModal(false);
+      axios({
+        method: "get",
+        url: `http://localhost:8000/api/testApplicants/${
+          props.testId
+        }?search=${searchParams}&evaluated=${
+          filterEvaluated ? "true" : filterNotEvaluated ? "false" : ""
+        }&min_marks=${filterMinMarks === null ? "" : filterMinMarks}&max_marks=${
+          filterMaxMarks === null ? "" : filterMaxMarks
+        }&top_percentage=${filterTopTests !== null ? "true" : "false"}`,
+        headers: {
+          Authorization: "Token " + localStorage.getItem("token"),
+        },
+      }).then((response) => {
+        setApplicants(
+          filterTopTests === null
+            ? response.data.applicants
+            : response.data.applicants.slice(
+                0,
+                Math.floor(
+                  (filterTopTests * response.data.applicants.length) / 100
+                )
+              )
+        );
+        dispatch(currentPageChanged(1));
+        dispatch(
+          numOfPagesChanged(
+            filterTopTests === null
+              ? Math.ceil(
+                  response.data.applicants.length / numOfApplicantsPerPage
+                )
+              : Math.ceil(
+                  Math.floor(
+                    (filterTopTests * response.data.applicants.length) / 100
+                  ) / numOfApplicantsPerPage
+                )
+          )
+        );
+      });
+      
+    }).catch((response) => {
+      toast.error("Some error occured. Try adding other file.", {
+        position: "bottom-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        toastId: "error1",
+      });
+    });
+  };
+
+  const addApplicantModal = (
+    <Modal
+      open={openAddApplicantModal}
+      onClose={() => setOpenAddApplicantModal(false)}
+    >
+      <Box sx={addApplicantStyle}>
+        <Typography id="modal-modal-title" variant="h6" component="h2">
+          Adding Applicants
+        </Typography>
+        <Typography
+          variant="subtitle1"
+          sx={{
+            marginTop: `20px`,
+            marginBottom: `5px`,
+          }}
+        >
+          Upload CSV
+        </Typography>
+        <form encType="multipart/form-data">
+          <input type="file" id="csv-file-upload" accept=".csv"/>
+        </form>
+        <div className={saveQuestionBtnContainer}>
+          <Button variant="contained" onClick={handleAddApplicants}>
+            Add
+          </Button>
+        </div>
+      </Box>
+    </Modal>
+  );
+
   useEffect(() => {
     axios({
       method: "get",
@@ -456,16 +644,33 @@ export default function TestTable(props) {
         filterEvaluated ? "true" : filterNotEvaluated ? "false" : ""
       }&min_marks=${filterMinMarks === null ? "" : filterMinMarks}&max_marks=${
         filterMaxMarks === null ? "" : filterMaxMarks
-      }`,
+      }&top_percentage=${filterTopTests !== null ? "true" : "false"}`,
       headers: {
         Authorization: "Token " + localStorage.getItem("token"),
       },
     }).then((response) => {
-      setApplicants(response.data.applicants);
+      setApplicants(
+        filterTopTests === null
+          ? response.data.applicants
+          : response.data.applicants.slice(
+              0,
+              Math.floor(
+                (filterTopTests * response.data.applicants.length) / 100
+              )
+            )
+      );
       dispatch(currentPageChanged(1));
       dispatch(
         numOfPagesChanged(
-          Math.ceil(response.data.applicants.length / numOfApplicantsPerPage)
+          filterTopTests === null
+            ? Math.ceil(
+                response.data.applicants.length / numOfApplicantsPerPage
+              )
+            : Math.ceil(
+                Math.floor(
+                  (filterTopTests * response.data.applicants.length) / 100
+                ) / numOfApplicantsPerPage
+              )
         )
       );
     });
@@ -475,6 +680,7 @@ export default function TestTable(props) {
     filterNotEvaluated,
     filterMinMarks,
     filterMaxMarks,
+    filterTopTests,
   ]);
 
   useEffect(() => {
@@ -485,9 +691,26 @@ export default function TestTable(props) {
         Authorization: "Token " + localStorage.getItem("token"),
       },
     }).then((response) => {
+      setCurrentUserId(response.data[0].id);
       setIsMaster(response.data[0].is_master);
     });
   }, []);
+
+  const [showOnlyAssignedToMe, setShowOnlyAssignedToMe] = useState(false);
+  const handleShowOnlyAssignedToMe = (event) => {
+    setShowOnlyAssignedToMe(event.target.checked);
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/testScore?applicant_id=${event.target.value}&test_id=${props.testId}&show_for_current_user=${event.target.checked}`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    }).then((response) => {
+      console.log(response.data);
+      setTestScore(response.data);
+      setOpen(true);
+    });
+  };
 
   const testScoreModal = (
     <Modal
@@ -501,7 +724,7 @@ export default function TestTable(props) {
     >
       <Box sx={style}>
         <Typography id="modal-modal-title" variant="h5" component="h2">
-          <b>Questions</b> {testScore && testScore.test_details.title}
+          <b>Editing Marks</b> {testScore && testScore.test_details.title}
         </Typography>
         <div className={applicantDetialsContainer}>
           <Typography variant="h6">Applicant Details</Typography>
@@ -514,88 +737,154 @@ export default function TestTable(props) {
             {testScore && testScore.applicant_details.enrolment_number}
           </Typography>
         </div>
+        <div className={switchAndLabelContainer}>
+          <Switch
+            onChange={handleShowOnlyAssignedToMe}
+            checked={showOnlyAssignedToMe}
+            color="primary"
+            value={testScore ? testScore.applicant_details.id : ""}
+          />
+          <Typography variant="subtitle2">
+            Show questions assigned to me
+          </Typography>
+        </div>
         {testScore &&
           testScore.sections.map((section, index) => (
-            <div className={sectionContentContainer} key={index}>
-              <Typography variant="h6" key={"typography-1-" + String(index)}>
-                <b>Section </b>
-                {section.title}
-              </Typography>
-              {section.questions.map((question, questionIndex) => (
-                <>
-                  <Typography
-                    key={"typography-2-" + String(questionIndex)}
-                    variant="subtitle1"
-                  >
-                    <b>Question </b>
-                    {question.title}{" "}
-                  </Typography>
-                  <Typography
-                    varient="subtitle2"
-                    key={"typography-3-" + String(questionIndex)}
-                  >
-                    <b>Maximum Marks </b>
-                    {question.maximum_marks}{" "}
-                  </Typography>
-                  <TextField
-                    id={"input-marks-" + String(question.id)}
-                    label={
-                      question.obtained_marks || question.obtained_marks === 0
-                        ? "Obtained Marks [EVALUATED BEFORE]"
-                        : "Obtained Marks"
-                    }
-                    color={
-                      question.obtained_marks || question.obtained_marks === 0
-                        ? "error"
-                        : "primary"
-                    }
-                    variant="filled"
-                    key={questionIndex}
-                    className={inputTestModal}
-                    defaultValue={
-                      question.obtained_marks
-                        ? String(question.obtained_marks)
-                        : question.obtained_marks === 0
-                        ? "0"
-                        : ""
-                    }
-                    type="number"
-                  />
-                  <TextField
-                    id={"input-remarks-" + String(question.id)}
-                    label={"Remarks"}
-                    color={question.obtained_marks ? "error" : "primary"}
-                    variant="filled"
-                    key={"text-field-2-" + String(questionIndex)}
-                    className={inputTestModal}
-                    defaultValue={question.remarks ? question.remarks : ""}
-                  />
-                  <Typography
-                    varient="subtitle2"
-                    key={"typography-6-" + String(questionIndex)}
-                    className={assigneeTypography}
-                  >
-                    <b>Assignees</b>
-                  </Typography>
-                  {question.assignee.length ? (
-                    question.assignee.map((member, index) => (
-                      <Tooltip title={member.name}>
-                        <img
-                          className={assigneeImage}
-                          src={member.image}
-                          key={"assignee-image-" + String(index)}
-                          onMouseEnter={handlePopoverOpen}
-                          onMouseLeave={handlePopoverClose}
-                        />
-                      </Tooltip>
-                    ))
-                  ) : (
-                    <>No member assigned</>
+            <Accordion>
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls="panel1a-content"
+                id="panel1a-header"
+              >
+                <Typography variant="h6" key={"typography-1-" + String(index)}>
+                  <b>Section </b>
+                  {section.title}
+                </Typography>
+                <Chip
+                  label={String(section.questions.length) + " Questions"}
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                  sx={{
+                    marginTop: `5px`,
+                    marginLeft: `5px`,
+                  }}
+                />
+              </AccordionSummary>
+              <AccordionDetails>
+                <div className={questionsContainer}>
+                  {!section.questions.length && (
+                    <BlueBanner message="No questions to show" margin="0px" />
                   )}
-                  <hr />
-                </>
-              ))}
-            </div>
+                  {section.questions.map((question, questionIndex) => (
+                    <Card
+                      className={card}
+                      key={String(index) + " " + String(questionIndex)}
+                    >
+                      <CardContent>
+                        <Typography
+                          key={"typography-2-" + String(questionIndex)}
+                          variant="h6"
+                        >
+                          <b>Question {questionIndex + 1}</b>
+                        </Typography>
+                        <Tooltip title={question.title}>
+                          <Typography variant="subtitle1">
+                            {question.title.length > 35
+                              ? question.title.substr(0, 35) + "..."
+                              : question.title}
+                          </Typography>
+                        </Tooltip>
+                        <Typography
+                          varient="subtitle2"
+                          key={"typography-3-" + String(questionIndex)}
+                        >
+                          <b>Maximum Marks </b>
+                          {question.maximum_marks}{" "}
+                        </Typography>
+                        <TextField
+                          id={"input-marks-" + String(question.id)}
+                          type="number"
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            right: `0px`,
+                          }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Typography>Obtained Marks</Typography>
+                              </InputAdornment>
+                            ),
+                          }}
+                          defaultValue={
+                            question.obtained_marks
+                              ? String(question.obtained_marks)
+                              : question.obtained_marks === 0
+                              ? "0"
+                              : ""
+                          }
+                          color={
+                            question.obtained_marks ||
+                            question.obtained_marks === 0
+                              ? "error"
+                              : "primary"
+                          }
+                          className={inputTestModal}
+                        />
+                        <TextField
+                          id={"input-remarks-" + String(question.id)}
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            right: `0px`,
+                          }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Typography>Remarks</Typography>
+                              </InputAdornment>
+                            ),
+                          }}
+                          defaultValue={
+                            question.remarks ? question.remarks : ""
+                          }
+                          color={
+                            question.obtained_marks ||
+                            question.obtained_marks === 0
+                              ? "error"
+                              : "primary"
+                          }
+                          className={inputTestModal}
+                        />
+                        <Typography
+                          varient="subtitle2"
+                          key={"typography-6-" + String(questionIndex)}
+                          className={assigneeTypography}
+                        >
+                          <b>Assignees</b>
+                        </Typography>
+                        {question.assignee.length ? (
+                          question.assignee.map((member, index) => (
+                            <Tooltip title={member.name}>
+                              <img
+                                className={assigneeImage}
+                                src={member.image}
+                                key={"assignee-image-" + String(index)}
+                                onMouseEnter={handlePopoverOpen}
+                                onMouseLeave={handlePopoverClose}
+                              />
+                            </Tooltip>
+                          ))
+                        ) : (
+                          <>No member assigned</>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </AccordionDetails>
+            </Accordion>
           ))}
         <div className={createRoundBtnContainer}>
           <Button variant="contained" onClick={() => handleSaveBtnClick()}>
@@ -688,9 +977,7 @@ export default function TestTable(props) {
                     <TableCell align="center">{applicant.mobile}</TableCell>
                     <TableCell align="center">{applicant.status}</TableCell>
                     <TableCell align="center">
-                      <Button
-                        onClick={() => handleTableRowClick(applicant.id)}
-                      >
+                      <Button onClick={() => handleTableRowClick(applicant.id)}>
                         Edit Marks
                       </Button>
                     </TableCell>
@@ -702,20 +989,22 @@ export default function TestTable(props) {
           </TableBody>
         </Table>
       </TableContainer>
+      <Button
+        sx={{
+          width: `100%`,
+          bgcolor: `#F8F8FF`,
+        }}
+        onClick={() => setOpenAddApplicantModal(true)}
+      >
+        <Add sx={{
+          height: `15px`,
+          width: `auto`,
+          marginTop: `-1px`,
+          marginRight: `3px`,
+        }}/> Add Applicants
+      </Button>
+      {addApplicantModal}
       {testScoreModal}
-      <ToastContainer
-        position="bottom-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-
       <div className={floatingBtnContainer}>
         <StyledBadge badgeContent={numOfFiltersApplied} color="secondary">
           <Fab

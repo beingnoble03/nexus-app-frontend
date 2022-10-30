@@ -6,6 +6,7 @@ const initialState = {
   filterNotEvaluated: false,
   filterMinMarks: null,
   filterMaxMarks: null,
+  filterTopTests: null,
 };
 
 const testSlice = createSlice({
@@ -32,7 +33,7 @@ const testSlice = createSlice({
       const prevState = state.filterMinMarks;
       if (prevState === null && action.payload !== null) {
         state.numOfFiltersApplied++;
-      } else if (prevState !== null && action.payload === null){
+      } else if (prevState !== null && action.payload === null) {
         state.numOfFiltersApplied--;
       }
       state.filterMinMarks = action.payload;
@@ -41,15 +42,29 @@ const testSlice = createSlice({
       const prevState = state.filterMaxMarks;
       if (prevState === null && action.payload !== null) {
         state.numOfFiltersApplied++;
-      } else if (prevState !== null && action.payload === null){
+      } else if (prevState !== null && action.payload === null) {
         state.numOfFiltersApplied--;
       }
       state.filterMaxMarks = action.payload;
+    },
+    filterTopTestsChanged: (state, action) => {
+      const prevState = state.filterTopTests;
+      if (prevState === null && action.payload !== null) {
+        state.numOfFiltersApplied++;
+      } else if (prevState !== null && action.payload === null) {
+        state.numOfFiltersApplied--;
+      }
+      state.filterTopTests = action.payload;
     },
   },
   extraReducers: {},
 });
 
 export default testSlice.reducer;
-export const { filterEvaluatedToggled, filterNotEvaluatedToggled, filterMinMarksChanged, filterMaxMarksChanged } =
-  testSlice.actions;
+export const {
+  filterEvaluatedToggled,
+  filterNotEvaluatedToggled,
+  filterMinMarksChanged,
+  filterMaxMarksChanged,
+  filterTopTestsChanged,
+} = testSlice.actions;
