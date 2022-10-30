@@ -7,7 +7,7 @@ import TableRow from "@mui/material/TableRow";
 import TableContainer from "@mui/material/TableContainer";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { Button, MenuItem } from "@mui/material";
+import { Button, Checkbox, MenuItem } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -22,6 +22,7 @@ import {
   numOfPagesChanged,
 } from "../app/features/paginatorSlice";
 import moment from "moment";
+import { toast } from "react-toastify";
 
 const useStyles = makeStyles({
   createRoundBtnContainer: {
@@ -69,7 +70,8 @@ export default function InterviewTable(props) {
   const dispatch = useDispatch();
   const currentPage = useSelector((state) => state.paginator.currentPage);
   const searchParams = useSelector((state) => state.search.searchParams);
-  const numOfApplicantsPerPage = 2;
+  const numOfApplicantsPerPage = 5;
+  const reFetchInterviews = props.reFetchInterviews
   const filterCompleted = useSelector(
     (state) => state.interview.filterCompleted
   );
@@ -85,6 +87,11 @@ export default function InterviewTable(props) {
   );
   const filterMaxTimeEntered = useSelector(
     (state) => state.interview.filterMaxTimeEntered
+  );
+  const filterMinMarks = useSelector((state) => state.interview.filterMinMarks);
+  const filterMaxMarks = useSelector((state) => state.interview.filterMaxMarks);
+  const filterTopInterviews = useSelector(
+    (state) => state.interview.filterTopInterviews
   );
 
   const {
@@ -137,16 +144,35 @@ export default function InterviewTable(props) {
       method: "get",
       url: `http://localhost:8000/api/interviews/?round=${roundId}&completed=${
         filterCompleted ? filterCompleted : filterPending ? !filterPending : ""
-      }&search=${searchParams}&time_assigned_max=${filterMaxTimeAssigned ? moment(filterMaxTimeAssigned).toISOString() : ""}&time_assigned_min=${filterMinTimeAssigned ? moment(filterMinTimeAssigned).toISOString() : ""}&time_entered_max=${filterMaxTimeEntered ? moment(filterMaxTimeEntered).toISOString() : "" }&time_entered_min=${filterMinTimeEntered ? moment(filterMinTimeEntered).toISOString() : ""}`,
+      }&search=${searchParams}&time_assigned_max=${
+        filterMaxTimeAssigned ? moment(filterMaxTimeAssigned).toISOString() : ""
+      }&time_assigned_min=${
+        filterMinTimeAssigned ? moment(filterMinTimeAssigned).toISOString() : ""
+      }&time_entered_max=${
+        filterMaxTimeEntered ? moment(filterMaxTimeEntered).toISOString() : ""
+      }&time_entered_min=${
+        filterMinTimeEntered ? moment(filterMinTimeEntered).toISOString() : ""
+      }&min_marks=${filterMinMarks === null ? "" : filterMinMarks}&max_marks=${
+        filterMaxMarks === null ? "" : filterMaxMarks
+      }&top_percentage=${filterTopInterviews === null ? "false" : "true"}`,
       headers: {
         Authorization: "Token " + localStorage.getItem("token"),
       },
     }).then((response) => {
-      setInterviews(response.data);
+      setInterviews(
+        filterTopInterviews === null
+          ? response.data
+          : response.data.slice(
+              0,
+              Math.floor((response.data.length * filterTopInterviews) / 100)
+            )
+      );
       dispatch(currentPageChanged(1));
       dispatch(
         numOfPagesChanged(
-          Math.ceil(response.data.length / numOfApplicantsPerPage)
+          filterTopInterviews === null ? 
+          Math.ceil(response.data.length / numOfApplicantsPerPage) : 
+          Math.ceil(Math.floor((response.data.length * filterTopInterviews) / 100) / numOfApplicantsPerPage)
         )
       );
     });
@@ -159,51 +185,114 @@ export default function InterviewTable(props) {
     filterMaxTimeAssigned,
     filterMinTimeEntered,
     filterMaxTimeEntered,
+    filterMaxMarks,
+    filterMinMarks,
+    filterTopInterviews,
+    reFetchInterviews,
   ]);
 
   useEffect(() => {
     dispatch(fetchPanels());
   }, [roundId]);
 
+  const selectedRows = props.selectedRows;
+  const setSelectedRows = props.setSelectedRows;
+
+  const handleSelectAllRows = (event) => {
+    if (event.target.checked) {
+      setSelectedRows(interviews.map((interview) => String(interview.id)));
+    } else {
+      setSelectedRows([]);
+    }
+  };
+
+  const handleSelectRow = (event) => {
+    if (event.target.checked) {
+      setSelectedRows((prevState) => [...prevState, event.target.value]);
+    } else {
+      setSelectedRows((prevState) =>
+        prevState.filter((applicantId) => applicantId !== event.target.value)
+      );
+    }
+    console.log(selectedRows);
+  };
+
+  const handleDeleteRow = (interviewId) => {
+    axios({
+      method: "delete",
+      url: `http://localhost:8000/api/interviews/${interviewId}/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    }).then((response) => {
+      setInterviews(prevState => 
+        prevState.filter(interview => interview.id !== interviewId)
+      )
+      toast.success("Interview deleted successfully.", {
+          position: "bottom-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+    });
+  }
+
   return (
-    <>
-      <TableContainer>
-        <Table sx={{ minWidth: 650 }} aria-label="simple table">
-          <TableHead>
-            <TableRow>
-              <TableCell align="center">ID</TableCell>
-              <TableCell align="center">Name</TableCell>
-              <TableCell align="center">Enrolment Number</TableCell>
-              <TableCell align="center">Mobile</TableCell>
-              <TableCell align="center">Status</TableCell>
-              <TableCell align="center">Panel Assigned</TableCell>
-              <TableCell align="center">Time Assigned</TableCell>
-              <TableCell align="center">Time Entered</TableCell>
-              <TableCell align="center">Edit</TableCell>
-              <TableCell align="center">Marks</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {interviews ? (
-              interviews
-                .slice(
-                  (currentPage - 1) * numOfApplicantsPerPage,
-                  getEndOfList()
-                )
-                .map((interview) => (
-                  <InterviewRow
-                    interview={interview}
-                    panelNames={panelNames}
-                    interviewStatusChoices={interviewStatusChoices}
-                    key={interview.id}
-                  />
-                ))
-            ) : (
-              <></>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </>
+    <TableContainer sx={{ overflow: `scroll` }}>
+      <Table sx={{ minWidth: 650 }} aria-label="simple table">
+        <TableHead>
+          <TableRow>
+            <TableCell align="center">
+              <Checkbox
+                color="primary"
+                indeterminate={
+                  interviews &&
+                  selectedRows.length > 0 &&
+                  selectedRows.length < interviews.length
+                }
+                checked={
+                  interviews &&
+                  interviews.length === selectedRows.length &&
+                  selectedRows.length > 0
+                }
+                onChange={handleSelectAllRows}
+              />
+            </TableCell>
+            <TableCell align="center">Name</TableCell>
+            <TableCell align="center">Enrolment Number</TableCell>
+            <TableCell align="center">Mobile</TableCell>
+            <TableCell align="center">Status</TableCell>
+            <TableCell align="center">Panel Assigned</TableCell>
+            <TableCell align="center">Time Assigned</TableCell>
+            <TableCell align="center">Time Entered</TableCell>
+            <TableCell align="center">Edit</TableCell>
+            <TableCell align="center">Marks</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {interviews ? (
+            interviews
+              .slice((currentPage - 1) * numOfApplicantsPerPage, getEndOfList())
+              .map((interview) => (
+                <InterviewRow
+                  interview={interview}
+                  panelNames={panelNames}
+                  interviewStatusChoices={interviewStatusChoices}
+                  selectedRows={selectedRows}
+                  handleSelectRow={handleSelectRow}
+                  key={interview.id}
+                  handleDeleteRow={handleDeleteRow}
+                />
+              ))
+          ) : (
+            <></>
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 }

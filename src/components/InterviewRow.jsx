@@ -2,7 +2,14 @@ import { useState, useEffect } from "react";
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
 import axios from "axios";
-import { Button, MenuItem } from "@mui/material";
+import {
+  Button,
+  Card,
+  CardContent,
+  Checkbox,
+  InputAdornment,
+  MenuItem,
+} from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -12,14 +19,15 @@ import { Modal, Box, Typography, TextField } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import moment from "moment";
+import { toast } from "react-toastify";
 
-// Unable to set panel to none
+
 const style = {
   position: "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: 400,
+  width: { xs: 350, sm: `80%` },
   bgcolor: "background.paper",
   border: "1px solid #000",
   boxShadow: 24,
@@ -32,6 +40,7 @@ const useStyles = makeStyles({
     display: `flex`,
     justifyContent: `flex-end`,
     marginTop: `15px`,
+    gap: `15px`,
   },
   inputTestModal: {
     width: `100%`,
@@ -56,6 +65,26 @@ const useStyles = makeStyles({
   assigneeTypography: {
     marginTop: `10px !important`,
   },
+  card: {
+    width: `320px`,
+    transition: "0.3s",
+    boxShadow: "0 8px 40px -12px rgba(0,0,0,0.3)",
+    "&:hover": {
+      boxShadow: "0 16px 70px -12.125px rgba(0,0,0,0.3)",
+    },
+    padding: `10px`,
+    cursor: `pointer`,
+    backgroundColor: `#F8F8FF !important`,
+  },
+  sectionsContainer: {
+    display: `flex`,
+    flexGrow: 1,
+    width: `100%`,
+    padding: `15px`,
+    flexWrap: `wrap`,
+    gap: `30px`,
+    overflow: `scroll`,
+  },
 });
 
 export default function InterviewRow(props) {
@@ -66,6 +95,8 @@ export default function InterviewRow(props) {
     sectionContentContainer,
     assigneeImage,
     assigneeTypography,
+    card,
+    sectionsContainer,
   } = useStyles();
 
   const { id, roundId } = useParams();
@@ -116,7 +147,62 @@ export default function InterviewRow(props) {
   };
 
   const handleSaveInterviewMarks = () => {
-    console.log("hel");
+    const scores = [];
+    console.log(interviewScore.interview_remarks)
+    interviewScore.round_details.sections.map((section, index) => {
+      scores.push({
+        section: section.id,
+        interview: interview.id,
+        obtained_marks: document.getElementById(
+          "input-marks-" + String(section.id)
+        ).value,
+      });
+    });
+    axios({
+      method: "post",
+      url: `http://localhost:8000/api/interviewMarks/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+      data: {
+        scores,
+      },
+    })
+      .catch((response) => {
+        toast.error(response.message, {
+          position: "bottom-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+      });
+    axios({
+      method: "patch",
+      url: `http://localhost:8000/api/interviews/${interview.id}/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+      data: {
+        remarks: document.getElementById("interview-remarks").value,
+      },
+    }).then((response) => {
+      toast.success("Interview Remarks & Marks Saved.", {
+        position: "bottom-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        toastId: "success1",
+      });
+      setOpenScoreModal(false);
+    });
   };
 
   useEffect(() => {
@@ -158,52 +244,79 @@ export default function InterviewRow(props) {
             {interviewScore &&
               interviewScore.applicant_details.enrolment_number}
           </Typography>
+          <TextField
+            id="interview-remarks"
+            color="primary"
+            variant="outlined"
+            size="small"
+            sx={{
+              width: `300px`,
+              margin: `10px 0px`,
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Typography>Remarks</Typography>
+                </InputAdornment>
+              ),
+            }}
+            defaultValue={interviewScore && interviewScore.interview_remarks ? interviewScore.interview_remarks : ""}
+          />
         </div>
-        {interviewScore &&
-          interviewScore.round_details.sections.map((section, index) => (
-            <div className={sectionContentContainer} key={index}>
-              <Typography variant="h6" key={"typography-1-" + String(index)}>
-                <b>Section </b>
-                {section.title}
-              </Typography>
-              <Typography
-                varient="subtitle2"
-                key={"typography-3-" + String(index)}
-              >
-                <b>Maximum Marks </b>
-                {section.maximum_marks}{" "}
-              </Typography>
-              <TextField
-                id={"input-marks-" + String(index)}
-                label={"Obtained Marks"}
-                color={
-                  section.obtained_marks || section.obtained_marks === 0
-                    ? "error"
-                    : "primary"
-                }
-                variant="filled"
-                key={index}
-                className={inputTestModal}
-                defaultValue={
-                  section.obtained_marks
-                    ? String(section.obtained_marks)
-                    : section.obtained_marks === 0
-                    ? "0"
-                    : ""
-                }
-                type="number"
-              />
-              <hr />
-            </div>
-          ))}
-        <TextField
-          id="interview-remarks"
-          label={"Remarks"}
-          color="primary"
-          variant="filled"
-          className={inputTestModal}
-          defaultValue={interview.remarks ? interview.remarks : ""}
-        />
+
+        <div className={sectionsContainer}>
+          {interviewScore &&
+            interviewScore.round_details.sections.map((section, index) => (
+              <Card className={card} key={index}>
+                <CardContent>
+                  <Typography
+                    variant="h6"
+                    key={"typography-1-" + String(index)}
+                  >
+                    <b>{section.title}</b>
+                  </Typography>
+
+                  <Typography
+                    varient="subtitle2"
+                    key={"typography-3-" + String(index)}
+                  >
+                    <b>Maximum Marks </b>
+                    {section.maximum_marks}{" "}
+                  </Typography>
+
+                  <TextField
+                    id={"input-marks-" + String(section.id)}
+                    type="number"
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      right: `0px`,
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Typography>Obtained Marks</Typography>
+                        </InputAdornment>
+                      ),
+                    }}
+                    defaultValue={
+                      section.obtained_marks
+                        ? String(section.obtained_marks)
+                        : section.obtained_marks === 0
+                        ? "0"
+                        : ""
+                    }
+                    color={
+                      section.obtained_marks || section.obtained_marks === 0
+                        ? "error"
+                        : "primary"
+                    }
+                    className={inputTestModal}
+                  />
+                </CardContent>
+              </Card>
+            ))}
+        </div>
         <div className={createRoundBtnContainer}>
           <Button
             variant="contained"
@@ -326,6 +439,13 @@ export default function InterviewRow(props) {
             ))}
         </TextField>
         <div className={createRoundBtnContainer}>
+        <Button
+            variant="contained"
+            onClick={() => props.handleDeleteRow(interview.id)}
+            color="error"
+          >
+            Delete
+          </Button>
           <Button variant="contained" onClick={handleSaveInterview}>
             Save
           </Button>
@@ -345,7 +465,12 @@ export default function InterviewRow(props) {
         selected={true}
       >
         <TableCell component="th" scope="row" align="center">
-          {interview.id}
+          <Checkbox
+            color="primary"
+            checked={props.selectedRows.indexOf(String(interview.id)) !== -1}
+            onClick={props.handleSelectRow}
+            value={interview.id}
+          />
         </TableCell>
         <TableCell align="center">{interview.applicant_details.name}</TableCell>
         <TableCell align="center">
@@ -359,7 +484,7 @@ export default function InterviewRow(props) {
         </TableCell>
         <TableCell align="center">
           <Link
-            to={`/panels/?pid=${interview.panel}`}
+            to={interview.panel ? `/panels/?pid=${interview.panel}` : `#`}
             style={{
               textDecoration: `none`,
             }}

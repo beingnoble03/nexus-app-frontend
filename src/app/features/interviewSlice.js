@@ -12,6 +12,9 @@ const initialState = {
   filterMaxTimeAssigned: "",
   filterMinTimeEntered: "",
   filterMaxTimeEntered: "",
+  filterMinMarks: null,
+  filterMaxMarks: null,
+  filterTopInterviews: null,
   numOfFiltersApplied: 0,
 };
 
@@ -59,53 +62,83 @@ const interviewSlice = createSlice({
       }
     },
     filterMinTimeEnteredChanged: (state, action) => {
-        let prevState = state.filterMinTimeEntered
+      let prevState = state.filterMinTimeEntered;
       state.filterMinTimeEntered = action.payload;
       if (action.payload) {
-          if(!prevState){
-            state.numOfFiltersApplied++;
-          }
-      } else {      if(prevState){
-        state.numOfFiltersApplied--;
-      }
+        if (!prevState) {
+          state.numOfFiltersApplied++;
+        }
+      } else {
+        if (prevState) {
+          state.numOfFiltersApplied--;
+        }
       }
     },
     filterMaxTimeEnteredChanged: (state, action) => {
-        let prevState = state.filterMaxTimeEntered
+      let prevState = state.filterMaxTimeEntered;
       state.filterMaxTimeEntered = action.payload;
       if (action.payload) {
-        if(!prevState){
+        if (!prevState) {
           state.numOfFiltersApplied++;
         }
-    } else {      if(prevState){
-      state.numOfFiltersApplied--;
-    }
-    }
+      } else {
+        if (prevState) {
+          state.numOfFiltersApplied--;
+        }
+      }
     },
     filterMinTimeAssignedChanged: (state, action) => {
-      let prevState = state.filterMinTimeAssigned
+      let prevState = state.filterMinTimeAssigned;
       state.filterMinTimeAssigned = action.payload;
       if (action.payload) {
-        if(!prevState){
+        if (!prevState) {
           state.numOfFiltersApplied++;
         }
-    } else {
-      if(prevState){
-        state.numOfFiltersApplied--;
+      } else {
+        if (prevState) {
+          state.numOfFiltersApplied--;
+        }
       }
-    }
     },
     filterMaxTimeAssignedChanged: (state, action) => {
-        let prevState = state.filterMaxTimeAssigned
+      let prevState = state.filterMaxTimeAssigned;
       state.filterMaxTimeAssigned = action.payload;
       if (action.payload) {
-        if(!prevState){
+        if (!prevState) {
           state.numOfFiltersApplied++;
         }
-    } else {      if(prevState){
-      state.numOfFiltersApplied--;
-    }
-    }
+      } else {
+        if (prevState) {
+          state.numOfFiltersApplied--;
+        }
+      }
+    },
+    filterMinMarksChanged: (state, action) => {
+      const prevState = state.filterMinMarks;
+      if (prevState === null && action.payload !== null) {
+        state.numOfFiltersApplied++;
+      } else if (prevState !== null && action.payload === null){
+        state.numOfFiltersApplied--;
+      }
+      state.filterMinMarks = action.payload;
+    },
+    filterMaxMarksChanged: (state, action) => {
+      const prevState = state.filterMaxMarks;
+      if (prevState === null && action.payload !== null) {
+        state.numOfFiltersApplied++;
+      } else if (prevState !== null && action.payload === null){
+        state.numOfFiltersApplied--;
+      }
+      state.filterMaxMarks = action.payload;
+    },
+    filterTopInterviewsChanged: (state, action) => {
+      const prevState = state.filterTopInterviews;
+      if (prevState === null && action.payload !== null) {
+        state.numOfFiltersApplied++;
+      } else if (prevState !== null && action.payload === null){
+        state.numOfFiltersApplied--;
+      }
+      state.filterTopInterviews = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -133,4 +166,7 @@ export const {
   filterMinTimeEnteredChanged,
   filterMinTimeAssignedChanged,
   filterMaxTimeAssignedChanged,
+  filterMaxMarksChanged,
+  filterMinMarksChanged,
+  filterTopInterviewsChanged,
 } = interviewSlice.actions;
