@@ -3,7 +3,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import Divider from "@mui/material/Divider";
 import Drawer from "@mui/material/Drawer";
 import Typography from "@mui/material/Typography";
-import { Box } from "@mui/material";
+import { Box, Skeleton } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchRounds, toggled } from "../app/features/drawerSlice";
@@ -154,6 +154,12 @@ function AppDrawer(props) {
             </ListItem>
           ))}
         </>
+      ) : isLoading ? (
+        <>
+          <Skeleton animation="wave" width={"80px"} />
+          <Skeleton animation="wave" />
+          <Skeleton animation="wave" />
+        </>
       ) : (
         <Typography align="center">Nothing here.</Typography>
       )}
@@ -162,7 +168,9 @@ function AppDrawer(props) {
 
   const addRoundBtn = (
     <div className={addRoundBtnContainer}>
-      <Button variant="contained" onClick={() => setOpen(true)}>
+      <Button variant="contained" onClick={() => setOpen(true)} sx={{
+        // background: `radial-gradient(circle, rgba(218,111,158,1) 0%, rgba(139,180,228,1) 100%)`,
+      }}>
         + Add Round
       </Button>
     </div>
@@ -178,10 +186,22 @@ function AppDrawer(props) {
           textAlign: "center",
         }}
       >
-        <Typography variant="h6">NEXUS</Typography>
+        <Link
+          to="/seasons/"
+          style={{
+            textDecoration: `none`,
+            color: `black`,
+          }}
+        >
+          <Typography variant="h6"
+          sx={{
+            background: `linear-gradient(to right, rgba(218,111,158,1) 0%, rgba(25,118,210,1) 100%)`,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: `transparent`,
+          }}>NEXUS</Typography>
+        </Link>
       </Box>
       <Divider />
-      {isLoading && <Typography>Loading</Typography>}
       {isRoundsListVisible ? roundsList : <></>}
       {isRoundsListVisible ? addRoundBtn : <></>}
     </div>
