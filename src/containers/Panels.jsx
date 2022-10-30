@@ -40,11 +40,12 @@ const useStyles = makeStyles({
     flexGrow: 1,
     width: `100%`,
     flexDirection: `column`,
+    overflow: `scroll`,
   },
   headingContainer: {
     display: `flex`,
     width: `100%`,
-    padding: `15px`,
+    padding: `25px`,
     flexDirection: `row`,
     justifyContent: `space-between`,
     flexWrap: `wrap`,
@@ -188,6 +189,19 @@ export default function Panels() {
   })
 }
 
+  const reFetchPanels = () => {
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/panels/?search=${searchParams}`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    })
+      .then((response) => {
+        dispatch(panelsChanged(response.data))
+    })
+  }
+
   const createPanelModal = (
     <Modal
       open={openPanelModal}
@@ -317,6 +331,7 @@ export default function Panels() {
                 key={panel.id}
                 count={index + 1}
                 highlightPanel = {highlightedPanelId && highlightedPanelId === String(panel.id)}
+                reFetchPanels = {reFetchPanels}
               />
             ))
           : "No Panel Available"}
