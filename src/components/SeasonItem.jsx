@@ -19,6 +19,15 @@ const useStyles = makeStyles({
       boxShadow: "0 16px 70px -12.125px rgba(0,0,0,0.3)",
     },
     padding: `10px`,
+    "&::before": {
+      content: "",
+      background: "linear-gradient(90deg, purple, green, hotpink)",
+      position: "absolute",
+      height: `50%`,
+      width: `50%`,
+      zIndex: `-1`,
+      filter: `blur(20px)`
+    },
   },
 });
 

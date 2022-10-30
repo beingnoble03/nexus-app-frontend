@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Typography, Button, Card, CardContent, CardActions } from "@mui/material";
+import {
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  CardActions,
+  Divider,
+  Tooltip,
+} from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { TextField, MenuItem, Checkbox } from "@mui/material";
 import axios from "axios";
 import { Modal, Box } from "@mui/material";
+import { toast } from "react-toastify";
 
 const style = {
   position: "absolute",
@@ -54,6 +63,7 @@ const useStyles = makeStyles({
     display: `flex`,
     justifyContent: `flex-end`,
     marginTop: `15px`,
+    gap: `15px`,
   },
   imgMembersContainer: {
     display: `grid`,
@@ -70,6 +80,8 @@ const useStyles = makeStyles({
       boxShadow: "0 16px 70px -12.125px rgba(0,0,0,0.3)",
     },
     padding: `10px`,
+    backgroundColor: `#F8F8FF !important`,
+    cursor: `pointer`,
   },
 });
 
@@ -130,11 +142,24 @@ export default function QuestionItem(props) {
         section: question.section,
         assignee: selectedImgMembers,
       },
-    }).then((response) => {
-      console.log(response.data);
-      setQuestion(response.data);
-      setOpenQuestionModal(false);
-    });
+    })
+      .then((response) => {
+        console.log(response.data);
+        setQuestion(response.data);
+        setOpenQuestionModal(false);
+      })
+      .catch((response) => {
+        toast.error(response.data, {
+          position: "bottom-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+      });
   };
 
   useEffect(() => {
@@ -152,12 +177,7 @@ export default function QuestionItem(props) {
   const questionModal = (
     <>
       {question && (
-        <Modal
-          open={openQuestionModal}
-          onClose={handleModalClose}
-          aria-labelledby="modal-modal-title"
-          aria-describedby="modal-modal-description"
-        >
+        <Modal open={openQuestionModal} onClose={() => setOpenQuestionModal(false)}>
           <Box sx={style}>
             <Typography id="modal-modal-title" variant="h6" component="h2">
               Editing Question
@@ -181,8 +201,8 @@ export default function QuestionItem(props) {
               <b>Assignee</b>
             </Typography>
             <div className={imgMembersContainer}>
-              {imgMembers.map((imgMember, index) => (
-                <>
+              {imgMembers.filter(imgMember => imgMember.name !== null).map((imgMember, index) => (
+                <span key={index}>
                   {imgMember.name && (
                     <div key={index}>
                       <Checkbox
@@ -195,10 +215,20 @@ export default function QuestionItem(props) {
                       {imgMember.name}
                     </div>
                   )}
-                </>
+                </span>
               ))}
             </div>
             <div className={saveQuestionBtnContainer}>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  handleModalClose()
+                  props.handleDeleteQuestion(question.id)
+                }}
+                color="error"
+              >
+                Delete
+              </Button>
               <Button variant="contained" onClick={handleSaveQuestion}>
                 Save
               </Button>
@@ -210,29 +240,30 @@ export default function QuestionItem(props) {
   );
 
   return (
-    <Card className={card}>
+    <Card className={card} onClick={handleModalOpen}>
       {question && (
         <CardContent>
           <Typography variant="h6" gutterBottom>
             <b>Question {props.count}</b>
           </Typography>
-          <Typography variant="h6">{question.title}</Typography>
           <Typography variant="subtitle1">
+            {question.title.length > 35
+              ? question.title.substr(0, 35) + "..."
+              : question.title}
+          </Typography>
+          <Typography variant="subtitle2">
             <b>Maximum Marks</b>
           </Typography>
           <Typography>{question.maximum_marks}</Typography>
-          <Typography variant="subtitle1">
-            <b>Assignee</b>
+          <Typography variant="subtitle2">
+            <b>Assignees</b>
           </Typography>
           <div className={badgeContainer}>
             {question.assignee_details.length ? (
               question.assignee_details.map((member, index) => (
-                <div className={assigneeBadge} key={String(index)}>
+                <Tooltip title={member.name} key={index}>
                   <img className={assigneeImage} src={member.image} />
-                  <Typography sx={{ p: 1 }}>
-                    <b>{member.name}</b>
-                  </Typography>
-                </div>
+                </Tooltip>
               ))
             ) : (
               <>No member assigned</>
@@ -240,18 +271,6 @@ export default function QuestionItem(props) {
           </div>
         </CardContent>
       )}
-      <CardActions>
-      <Button
-            variant="contained"
-            size="small"
-            onClick={handleModalOpen}
-            sx={{
-              marginBottom: `0px`,
-            }}
-          >
-            Edit
-          </Button>
-      </CardActions>
       {questionModal}
     </Card>
   );

@@ -11,6 +11,12 @@ import axios from "axios";
 import { useParams } from "react-router-dom";
 import { Typography } from "@mui/material";
 import { selectedRoundChanged } from "../app/features/seasonSlice";
+import BlueBanner from "../components/BlueBanner";
+
+const style = {
+  width: `100%`,
+  paddingTop: `50px`,
+}
 
 export default function Season(props) {
   const { id } = useParams();
@@ -34,6 +40,8 @@ export default function Season(props) {
   }, [id]);
 
   return (
-    <Typography>Select a round to view details</Typography>
+    <div style={style}>
+    <BlueBanner message="No Round Selected. Select a round to view details." />
+    </div>
   );
 }

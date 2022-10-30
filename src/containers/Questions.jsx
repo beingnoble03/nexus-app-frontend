@@ -9,8 +9,13 @@ import QuestionItem from "../components/QuestionItem";
 import { fetchedImgMembers } from "../app/features/imgMemberSlice";
 import { Modal, Box } from "@mui/material";
 import { titleChanged } from "../app/features/appBarSlice";
-import { fetchRounds, roundsVisibilityChanged, selectedSeasonIdChanged } from "../app/features/drawerSlice";
+import {
+  fetchRounds,
+  roundsVisibilityChanged,
+  selectedSeasonIdChanged,
+} from "../app/features/drawerSlice";
 import BlueBanner from "../components/BlueBanner";
+import { toast } from "react-toastify";
 
 const style = {
   position: "absolute",
@@ -83,7 +88,7 @@ const useStyles = makeStyles({
   },
   blueBannerContainer: {
     width: `100%`,
-  }
+  },
 });
 
 export default function Questions(props) {
@@ -148,18 +153,88 @@ export default function Questions(props) {
           maximum_marks: questionMaximumMarks,
           section: selectedSection.id,
         },
-      }).then((response) => {
-        console.log(response.data);
-        setOpenQuestionModal(false);
-        setRefresh(refresh + 1);
-        setSelectedSection(selectedSection);
-      });
+      })
+        .then((response) => {
+          console.log(response.data);
+          setOpenQuestionModal(false);
+          const newQuestionsList = [
+            ...selectedSection.questions,
+            response.data,
+          ];
+          selectedSection.questions = newQuestionsList;
+          toast.success("Question created.", {
+            position: "bottom-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+        })
+        .catch((response) => {
+          if ("maximum_marks" in response.response.data) {
+            toast.error(
+              "Maximum Marks: " + String(response.response.data.maximum_marks),
+              {
+                position: "bottom-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+              }
+            );
+          } else {
+            toast.error(
+              "Question Title: " + String(response.response.data.title),
+              {
+                position: "bottom-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+              }
+            );
+          }
+        });
     }
   };
 
   const handleChange = (event) => {
     setSelectedSection(event.target.value);
     console.log(event.target.value);
+  };
+
+  const handleDeleteQuestion = (questionId) => {
+    axios({
+      method: "delete",
+      url: `http://localhost:8000/api/questions/${questionId}/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    }).then((response) => {
+      const newQuestionsList = selectedSection.questions.filter(
+        (question) => question.id !== questionId
+      );
+      selectedSection.questions = newQuestionsList;
+      toast.success("Question deleted successfully.", {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+    });
   };
 
   const createQuestionModal = (
@@ -190,8 +265,8 @@ export default function Questions(props) {
         </Typography>
         <div className={imgMembersContainer}>
           {imgMembers &&
-            imgMembers.map((imgMember, index) => (
-              <>{imgMember.name && <div key={index}>{imgMember.name}</div>}</>
+            imgMembers.filter(imgMember => imgMember.name !== null).map((imgMember, index) => (
+              <span key={index}>{imgMember.name && <div key={index}>{imgMember.name}</div>}</span>
             ))}
         </div>
         <div className={saveQuestionBtnContainer}>
@@ -239,6 +314,7 @@ export default function Questions(props) {
     })
       .then((response) => {
         setTest(response.data);
+        console.log(response.data);
         dispatch(titleChanged(response.data.title));
       })
       .catch((response) => {
@@ -260,9 +336,9 @@ export default function Questions(props) {
       .catch((response) => {
         console.log(response.message);
       });
-      dispatch(selectedSeasonIdChanged(id))
-      dispatch(fetchRounds())
-      dispatch(roundsVisibilityChanged(true))
+    dispatch(selectedSeasonIdChanged(id));
+    dispatch(fetchRounds());
+    dispatch(roundsVisibilityChanged(true));
   }, []);
 
   return (
@@ -305,16 +381,20 @@ export default function Questions(props) {
           </div>
         </div>
         <div className={questionItemContainer}>
-          {selectedSection
-            ? selectedSection.questions.map((question, index) => (
-                <QuestionItem
-                  id={question.id}
-                  key={question.id}
-                  count={index + 1}
-                />
-              ))
-            : 
-            <div className={blueBannerContainer}><BlueBanner message="No section selected. Select section to find questions."/></div>}
+          {selectedSection ? (
+            selectedSection.questions.map((question, index) => (
+              <QuestionItem
+                id={question.id}
+                key={question.id}
+                count={index + 1}
+                handleDeleteQuestion={handleDeleteQuestion}
+              />
+            ))
+          ) : (
+            <div className={blueBannerContainer}>
+              <BlueBanner message="No section selected. Select section to find questions." />
+            </div>
+          )}
         </div>
       </div>
       {createQuestionModal}
