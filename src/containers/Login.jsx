@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { titleChanged } from "../app/features/appBarSlice";
+import { roundsVisibilityChanged } from "../app/features/drawerSlice";
 
 const useStyles = makeStyles({
   buttonContainer: {
@@ -37,6 +38,7 @@ export default function Login() {
   const dispatch = useDispatch();
   useEffect(() => {
     dispatch(titleChanged("Login"));
+    dispatch(roundsVisibilityChanged(false));
   }, []);
 
   useEffect(() => {

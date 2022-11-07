@@ -95,7 +95,7 @@ const useStyles = makeStyles({
   },
   inputRoundType: {
     width: `100%`,
-    margin: `5px 0px !important`,
+    margin: `15px 0px !important`,
   },
 });
 

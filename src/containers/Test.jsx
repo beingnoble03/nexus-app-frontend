@@ -17,6 +17,7 @@ import {
   selectedSeasonIdChanged,
 } from "../app/features/drawerSlice";
 import BlueBanner from "../components/BlueBanner";
+import { selectedRoundChanged } from "../app/features/seasonSlice";
 
 const styleTabPanel = {
   display: `flex`,
@@ -91,6 +92,7 @@ export default function Test(props) {
         Authorization: "Token " + localStorage.getItem("token"),
       },
     }).then((response) => {
+      dispatch(selectedRoundChanged(Number(roundId)));
       dispatch(titleChanged(response.data.round_name));
       setTestTitles(response.data.test_titles);
     });

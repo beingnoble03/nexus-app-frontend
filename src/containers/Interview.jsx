@@ -5,7 +5,7 @@ import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
 import { makeStyles, styled } from "@mui/styles";
-import { Button, MenuItem } from "@mui/material";
+import { Button, IconButton, MenuItem } from "@mui/material";
 import InterviewTable from "../components/InterviewTable";
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
@@ -19,7 +19,7 @@ import { titleChanged } from "../app/features/appBarSlice";
 import axios from "axios";
 import Paginator from "../components/Paginator";
 import { Fab } from "@mui/material";
-import { Filter, Close, Add } from "@mui/icons-material";
+import { Filter, Close, Add, Delete } from "@mui/icons-material";
 import { Modal, Typography, Switch, Badge, TextField } from "@mui/material";
 import {
   filterCompletedToggled,
@@ -37,7 +37,9 @@ import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import ConfirmationModal from "../components/ConfirmationModal";
 import { toast } from "react-toastify";
-
+import { selectedRoundChanged } from "../app/features/seasonSlice";
+import { isMasterChanged } from "../app/features/userSlice";
+import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 
 const style = {
   position: "absolute",
@@ -152,6 +154,7 @@ const useStyles = makeStyles({
     justifyContent: `space-between`,
     flexDirection: `row`,
     alignItems: `center`,
+    gap: `10px`,
   },
   marksFilterContainer: {
     display: `flex`,
@@ -227,7 +230,9 @@ export default function Interview() {
   );
   const filterMinMarks = useSelector((state) => state.interview.filterMinMarks);
   const filterMaxMarks = useSelector((state) => state.interview.filterMaxMarks);
-  const filterTopInterviews = useSelector((state) => state.interview.filterTopInterviews);
+  const filterTopInterviews = useSelector(
+    (state) => state.interview.filterTopInterviews
+  );
   const [isMaster, setIsMaster] = useState(false);
   const [reFetchInterviews, setReFetchInterviews] = useState(0);
 
@@ -270,8 +275,8 @@ export default function Interview() {
       filterTopInterviewsChanged(
         event.target.value === "" ? null : Number(event.target.value)
       )
-    )
-  }
+    );
+  };
 
   const filtersModal = (
     <Modal
@@ -323,7 +328,9 @@ export default function Interview() {
                 <TextField
                   variant="filled"
                   label="Show x% top applicants"
-                  value={filterTopInterviews === null ? "" : filterTopInterviews}
+                  value={
+                    filterTopInterviews === null ? "" : filterTopInterviews
+                  }
                   placeholder="Enter x"
                   onChange={handleFilterTopInterviews}
                   sx={{
@@ -460,6 +467,7 @@ export default function Interview() {
         Authorization: "Token " + localStorage.getItem("token"),
       },
     }).then((response) => {
+      dispatch(selectedRoundChanged(Number(roundId)));
       dispatch(titleChanged(response.data.round_name));
     });
   }, [roundId]);
@@ -472,16 +480,19 @@ export default function Interview() {
         Authorization: "Token " + localStorage.getItem("token"),
       },
     }).then((response) => {
+      console.log(response.data[0].is_master);
+      isMasterChanged(response.data[0].is_master);
       setIsMaster(response.data[0].is_master);
     });
   }, []);
 
   const [selectedRows, setSelectedRows] = useState([]);
+  const [selectedApplicantIds, setSelectedApplicantIds] = useState([]);
   const [selectedRound, setSelectedRound] = useState("");
   const [openConfirmationModal, setOpenConfirmationModal] = useState(false);
-
-  const [openAddApplicantModal, setOpenAddApplicantModal] = useState(false)
-
+  const [openDeleteConfirmationModal, setOpenDeleteConfirmationModal] =
+    useState(false);
+  const [openAddApplicantModal, setOpenAddApplicantModal] = useState(false);
 
   const handleAddApplicants = () => {
     var formData = new FormData();
@@ -497,33 +508,35 @@ export default function Interview() {
         "Content-Type": "multipart/form-data",
       },
       data: formData,
-    }).then((response) => {
-      toast.success("Interviews added successfully.", {
-        position: "bottom-right",
-        autoClose: 4000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        toastId: "success1",
+    })
+      .then((response) => {
+        toast.success("Interviews added successfully.", {
+          position: "bottom-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          toastId: "success1",
+        });
+        setOpenAddApplicantModal(false);
+        setReFetchInterviews(reFetchInterviews + 1);
+      })
+      .catch((response) => {
+        toast.error("Some error occured. Try adding other file.", {
+          position: "bottom-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          toastId: "error1",
+        });
       });
-      setOpenAddApplicantModal(false);
-      setReFetchInterviews(reFetchInterviews + 1);
-    }).catch((response) => {
-      toast.error("Some error occured. Try adding other file.", {
-        position: "bottom-right",
-        autoClose: 4000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        toastId: "error1",
-      });
-    });
   };
 
   const addApplicantModal = (
@@ -545,7 +558,7 @@ export default function Interview() {
           Upload CSV
         </Typography>
         <form encType="multipart/form-data">
-          <input type="file" id="csv-file-upload" accept=".csv"/>
+          <input type="file" id="csv-file-upload" accept=".csv" />
         </form>
         <div className={saveQuestionBtnContainer}>
           <Button variant="contained" onClick={handleAddApplicants}>
@@ -569,22 +582,27 @@ export default function Interview() {
         <InterviewTable
           selectedRows={selectedRows}
           setSelectedRows={setSelectedRows}
+          selectedApplicantIds={selectedApplicantIds}
+          setSelectedApplicantIds={setSelectedApplicantIds}
           reFetchInterviews={reFetchInterviews}
         />
         <Button
-        sx={{
-          width: `100%`,
-          bgcolor: `#F8F8FF`,
-        }}
-        onClick={() => setOpenAddApplicantModal(true)}
-      >
-        <Add sx={{
-          height: `15px`,
-          width: `auto`,
-          marginTop: `-1px`,
-          marginRight: `3px`,
-        }}/> Add Applicants
-      </Button>
+          sx={{
+            width: `100%`,
+            bgcolor: `#F8F8FF`,
+          }}
+          onClick={() => setOpenAddApplicantModal(true)}
+        >
+          <Add
+            sx={{
+              height: `15px`,
+              width: `auto`,
+              marginTop: `-1px`,
+              marginRight: `3px`,
+            }}
+          />{" "}
+          Add Applicants
+        </Button>
       </div>
       <div className={floatingBtnContainer}>
         <StyledBadge badgeContent={numOfFiltersApplied} color="secondary">
@@ -623,6 +641,7 @@ export default function Interview() {
               width: `200px`,
             }}
             size="small"
+            disabled={!selectedRows.length}
           >
             {rounds
               .filter((round) => String(round.id) !== roundId)
@@ -634,6 +653,12 @@ export default function Interview() {
                 </MenuItem>
               ))}
           </TextField>
+          <IconButton
+            disabled={!selectedRows.length}
+            onClick={() => setOpenDeleteConfirmationModal("true")}
+          >
+            <Delete />
+          </IconButton>
         </div>
         <div className={paginatorConatiner}>
           <Paginator />
@@ -652,8 +677,17 @@ export default function Interview() {
         }
         openConfirmationModal={openConfirmationModal}
         setOpenConfirmationModal={setOpenConfirmationModal}
-        applicantIds={selectedRows}
+        applicantIds={selectedApplicantIds}
         roundId={selectedRound}
+        setSelectedRound={setSelectedRound}
+      />
+      <DeleteConfirmationModal
+        roundType={"I"}
+        openConfirmationModal={openDeleteConfirmationModal}
+        setOpenConfirmationModal={setOpenDeleteConfirmationModal}
+        applicantIds={selectedRows}
+        roundId={roundId}
+        setReFetchInterviews={setReFetchInterviews}
       />
     </div>
   );

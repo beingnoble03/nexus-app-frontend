@@ -22,6 +22,7 @@ export default function Season(props) {
   const { id } = useParams();
   const dispatch = useDispatch();
   useEffect(() => {
+    dispatch(selectedRoundChanged(null));
     dispatch(roundsVisibilityChanged(true));
     dispatch(selectedSeasonIdChanged(id));
     dispatch(fetchRounds())
