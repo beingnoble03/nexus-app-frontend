@@ -23,6 +23,7 @@ import {
   InputAdornment,
   CardContent,
   Chip,
+  IconButton,
 } from "@mui/material";
 import { toast } from "react-toastify";
 import { Popover } from "@mui/material";
@@ -35,7 +36,7 @@ import {
   numOfPagesChanged,
 } from "../app/features/paginatorSlice";
 import { Badge, Fab, Switch } from "@mui/material";
-import { Close, Filter } from "@mui/icons-material";
+import { Close, Delete, Filter } from "@mui/icons-material";
 import {
   filterEvaluatedToggled,
   filterMaxMarksChanged,
@@ -47,7 +48,8 @@ import ConfirmationModal from "./ConfirmationModal";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Score } from "@mui/icons-material";
 import BlueBanner from "./BlueBanner";
-import {Add} from "@mui/icons-material"
+import { Add } from "@mui/icons-material";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
 
 const styleFiltersBox = {
   position: "absolute",
@@ -96,6 +98,21 @@ const addApplicantStyle = {
   overflow: `scroll`,
 };
 
+const applicantDetailsStyle = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: { xs: 350, sm: `550px` },
+  bgcolor: "background.paper",
+  border: "1px solid #000",
+  boxShadow: 24,
+  p: 4,
+  borderRadius: `10px`,
+  maxHeight: `90%`,
+  overflow: `scroll`,
+};
+
 const footerStyle = {
   display: `flex`,
   flexDirection: `row`,
@@ -130,7 +147,7 @@ const useStyles = makeStyles({
   },
   inputTestModal: {
     width: `100%`,
-    marginTop: `10px !important`,
+    marginTop: `15px !important`,
   },
   sectionContentContainer: {
     marginTop: `10px`,
@@ -147,6 +164,7 @@ const useStyles = makeStyles({
     width: `30px`,
     height: `auto`,
     padding: 2,
+    borderRadius: `50%`,
   },
   assigneeTypography: {
     marginTop: `10px !important`,
@@ -216,6 +234,7 @@ const useStyles = makeStyles({
     justifyContent: `space-between`,
     flexDirection: `row`,
     alignItems: `center`,
+    gap: `15px`,
   },
   questionsContainer: {
     display: `flex`,
@@ -251,7 +270,7 @@ export default function TestTable(props) {
   const [open, setOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const currentPage = useSelector((state) => state.paginator.currentPage);
-  const numOfApplicantsPerPage = 2;
+  const numOfApplicantsPerPage = 5;
   const searchParams = useSelector((state) => state.search.searchParams);
   const numOfFiltersApplied = useSelector(
     (state) => state.test.numOfFiltersApplied
@@ -357,6 +376,7 @@ export default function TestTable(props) {
         console.log(response.data);
         setTestScore(response.data);
         setOpen(true);
+        setShowOnlyAssignedToMe(false);
       })
       .catch((response) => {
         let errorTitle = "No questions available for this test.";
@@ -429,6 +449,133 @@ export default function TestTable(props) {
         });
       });
   };
+
+  const [selectedApplicant, setSelectedApplicant] = useState(null);
+
+  const handleOpenApplicantDetailsModal = (applicantId) => {
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/applicants/${applicantId}/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    }).then((response) => {
+      console.log(response.data);
+      setOpenApplicantDetialsModal(true);
+      setSelectedApplicant(response.data);
+    });
+  };
+
+  const handleApplicantSave = () => {
+    const applicantId = selectedApplicant.id
+    axios({
+      method: "patch",
+      url: `http://localhost:8000/api/applicants/${applicantId}/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+      data: {
+        mobile: document.getElementById("details-applicant-mobile").value,
+        email: document.getElementById("details-applicant-email").value,
+      }
+    }).then((response) => {
+      console.log(response.data);
+      toast.success("Applicant Details Saved", {
+        position: "bottom-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        toastId: "success1",
+      });
+      setOpenApplicantDetialsModal(false)
+    });
+  }
+
+  const [openApplicantDetailsModal, setOpenApplicantDetialsModal] =
+    useState(false);
+
+  const applicantDetailsModal = (
+    <Modal
+      open={openApplicantDetailsModal}
+      onClose={() => setOpenApplicantDetialsModal(false)}
+    >
+      <Box sx={addApplicantStyle}>
+        <Typography id="modal-modal-title" variant="h6" component="h2" gutterBottom>
+        {selectedApplicant && selectedApplicant.name}
+        </Typography>
+        <Typography variant="subtitle1" gutterBottom>
+         <b>Enrolment Number</b>{" "}
+        {selectedApplicant && selectedApplicant.enrolment_number}
+        </Typography>
+        <TextField
+          variant="outlined"
+          className={inputTestModal}
+          color="primary"
+          defaultValue={selectedApplicant && selectedApplicant.mobile}
+          id="details-applicant-mobile"
+          label="Mobile"
+        />
+        <TextField
+          variant="outlined"
+          className={inputTestModal}
+          color="primary"
+          defaultValue={selectedApplicant && selectedApplicant.email}
+          id="details-applicant-email"
+          label="Email Address"
+        />
+        <div className={saveQuestionBtnContainer}>
+          <Button variant="contained" onClick={handleApplicantSave}>
+            Save
+          </Button>
+        </div>
+      </Box>
+    </Modal>
+  );
+
+  const fetchApplicants = () =>  {
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/testApplicants/${
+        props.testId
+      }?search=${searchParams}&evaluated=${
+        filterEvaluated ? "true" : filterNotEvaluated ? "false" : ""
+      }&min_marks=${filterMinMarks === null ? "" : filterMinMarks}&max_marks=${
+        filterMaxMarks === null ? "" : filterMaxMarks
+      }&top_percentage=${filterTopTests !== null ? "true" : "false"}`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    }).then((response) => {
+      setApplicants(
+        filterTopTests === null
+          ? response.data.applicants
+          : response.data.applicants.slice(
+              0,
+              Math.floor(
+                (filterTopTests * response.data.applicants.length) / 100
+              )
+            )
+      );
+      dispatch(currentPageChanged(1));
+      dispatch(
+        numOfPagesChanged(
+          filterTopTests === null
+            ? Math.ceil(
+                response.data.applicants.length / numOfApplicantsPerPage
+              )
+            : Math.ceil(
+                Math.floor(
+                  (filterTopTests * response.data.applicants.length) / 100
+                ) / numOfApplicantsPerPage
+              )
+        )
+      );
+    });
+  }
 
   const filtersModal = (
     <Modal
@@ -538,71 +685,35 @@ export default function TestTable(props) {
         "Content-Type": "multipart/form-data",
       },
       data: formData,
-    }).then((response) => {
-      toast.success("Applicants added successfully.", {
-        position: "bottom-right",
-        autoClose: 4000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        toastId: "success1",
+    })
+      .then((response) => {
+        toast.success("Applicants added successfully.", {
+          position: "bottom-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          toastId: "success1",
+        });
+        setOpenAddApplicantModal(false);
+        fetchApplicants()
+      })
+      .catch((response) => {
+        toast.error("Some error occured. Try adding other file.", {
+          position: "bottom-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          toastId: "error1",
+        });
       });
-      setOpenAddApplicantModal(false);
-      axios({
-        method: "get",
-        url: `http://localhost:8000/api/testApplicants/${
-          props.testId
-        }?search=${searchParams}&evaluated=${
-          filterEvaluated ? "true" : filterNotEvaluated ? "false" : ""
-        }&min_marks=${filterMinMarks === null ? "" : filterMinMarks}&max_marks=${
-          filterMaxMarks === null ? "" : filterMaxMarks
-        }&top_percentage=${filterTopTests !== null ? "true" : "false"}`,
-        headers: {
-          Authorization: "Token " + localStorage.getItem("token"),
-        },
-      }).then((response) => {
-        setApplicants(
-          filterTopTests === null
-            ? response.data.applicants
-            : response.data.applicants.slice(
-                0,
-                Math.floor(
-                  (filterTopTests * response.data.applicants.length) / 100
-                )
-              )
-        );
-        dispatch(currentPageChanged(1));
-        dispatch(
-          numOfPagesChanged(
-            filterTopTests === null
-              ? Math.ceil(
-                  response.data.applicants.length / numOfApplicantsPerPage
-                )
-              : Math.ceil(
-                  Math.floor(
-                    (filterTopTests * response.data.applicants.length) / 100
-                  ) / numOfApplicantsPerPage
-                )
-          )
-        );
-      });
-      
-    }).catch((response) => {
-      toast.error("Some error occured. Try adding other file.", {
-        position: "bottom-right",
-        autoClose: 4000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        toastId: "error1",
-      });
-    });
   };
 
   const addApplicantModal = (
@@ -624,7 +735,7 @@ export default function TestTable(props) {
           Upload CSV
         </Typography>
         <form encType="multipart/form-data">
-          <input type="file" id="csv-file-upload" accept=".csv"/>
+          <input type="file" id="csv-file-upload" accept=".csv" />
         </form>
         <div className={saveQuestionBtnContainer}>
           <Button variant="contained" onClick={handleAddApplicants}>
@@ -636,44 +747,7 @@ export default function TestTable(props) {
   );
 
   useEffect(() => {
-    axios({
-      method: "get",
-      url: `http://localhost:8000/api/testApplicants/${
-        props.testId
-      }?search=${searchParams}&evaluated=${
-        filterEvaluated ? "true" : filterNotEvaluated ? "false" : ""
-      }&min_marks=${filterMinMarks === null ? "" : filterMinMarks}&max_marks=${
-        filterMaxMarks === null ? "" : filterMaxMarks
-      }&top_percentage=${filterTopTests !== null ? "true" : "false"}`,
-      headers: {
-        Authorization: "Token " + localStorage.getItem("token"),
-      },
-    }).then((response) => {
-      setApplicants(
-        filterTopTests === null
-          ? response.data.applicants
-          : response.data.applicants.slice(
-              0,
-              Math.floor(
-                (filterTopTests * response.data.applicants.length) / 100
-              )
-            )
-      );
-      dispatch(currentPageChanged(1));
-      dispatch(
-        numOfPagesChanged(
-          filterTopTests === null
-            ? Math.ceil(
-                response.data.applicants.length / numOfApplicantsPerPage
-              )
-            : Math.ceil(
-                Math.floor(
-                  (filterTopTests * response.data.applicants.length) / 100
-                ) / numOfApplicantsPerPage
-              )
-        )
-      );
-    });
+    fetchApplicants()
   }, [
     searchParams,
     filterEvaluated,
@@ -749,7 +823,11 @@ export default function TestTable(props) {
           </Typography>
         </div>
         {testScore &&
-          testScore.sections.map((section, index) => (
+          testScore.sections.map((section, index) => {
+            if (showOnlyAssignedToMe && !section.questions.length) {
+              return <></>
+            }
+            return <>
             <Accordion>
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
@@ -885,7 +963,9 @@ export default function TestTable(props) {
                 </div>
               </AccordionDetails>
             </Accordion>
-          ))}
+            </>
+          }
+          )}
         <div className={createRoundBtnContainer}>
           <Button variant="contained" onClick={() => handleSaveBtnClick()}>
             Save
@@ -897,6 +977,7 @@ export default function TestTable(props) {
 
   const [selectedRows, setSelectedRows] = useState([]);
   const [openConfirmationModal, setOpenConfirmationModal] = useState(false);
+  const [openDeleteConfirmationModal, setOpenDeleteConfirmationModal] = useState(false)
 
   const handleSelectAllRows = (event) => {
     if (event.target.checked) {
@@ -970,7 +1051,19 @@ export default function TestTable(props) {
                         value={applicant.id}
                       />
                     </TableCell>
-                    <TableCell align="center">{applicant.name}</TableCell>
+                    <TableCell align="center">
+                      <a
+                        onClick={() =>
+                          handleOpenApplicantDetailsModal(applicant.id)
+                        }
+                        style={{
+                          cursor: `pointer`,
+                          color: `#1976d2`,
+                        }}
+                      >
+                        {applicant.name}
+                      </a>
+                    </TableCell>
                     <TableCell align="center">
                       {applicant.enrolment_number}
                     </TableCell>
@@ -988,21 +1081,24 @@ export default function TestTable(props) {
             )}
           </TableBody>
         </Table>
+        <Button
+          sx={{
+            width: `100%`,
+            bgcolor: `#F8F8FF`,
+          }}
+          onClick={() => setOpenAddApplicantModal(true)}
+        >
+          <Add
+            sx={{
+              height: `15px`,
+              width: `auto`,
+              marginTop: `-1px`,
+              marginRight: `3px`,
+            }}
+          />{" "}
+          Add Applicants
+        </Button>
       </TableContainer>
-      <Button
-        sx={{
-          width: `100%`,
-          bgcolor: `#F8F8FF`,
-        }}
-        onClick={() => setOpenAddApplicantModal(true)}
-      >
-        <Add sx={{
-          height: `15px`,
-          width: `auto`,
-          marginTop: `-1px`,
-          marginRight: `3px`,
-        }}/> Add Applicants
-      </Button>
       {addApplicantModal}
       {testScoreModal}
       <div className={floatingBtnContainer}>
@@ -1021,6 +1117,7 @@ export default function TestTable(props) {
         </StyledBadge>
       </div>
       {filtersModal}
+      {applicantDetailsModal}
       <Box sx={footerStyle}>
         <Link
           to={`/season/${props.seasonId}/test/${props.testId}/questions/`}
@@ -1048,6 +1145,7 @@ export default function TestTable(props) {
               width: `200px`,
             }}
             size="small"
+            disabled={!selectedRows.length}
           >
             {rounds
               .filter((round) => String(round.id) !== props.roundId)
@@ -1059,6 +1157,9 @@ export default function TestTable(props) {
                 </MenuItem>
               ))}
           </TextField>
+          <IconButton disabled={!selectedRows.length} onClick={() => setOpenDeleteConfirmationModal(true)}>
+          <Delete />
+          </IconButton>
         </div>
         <Box sx={paginatorContainerStyle}>
           <Paginator />
@@ -1077,6 +1178,16 @@ export default function TestTable(props) {
         setOpenConfirmationModal={setOpenConfirmationModal}
         applicantIds={selectedRows}
         roundId={selectedRound}
+        setSelectedRound={setSelectedRound}
+      />
+      <DeleteConfirmationModal
+        roundType={"T"}
+        openConfirmationModal={openDeleteConfirmationModal}
+        setOpenConfirmationModal={setOpenDeleteConfirmationModal}
+        applicantIds={selectedRows}
+        roundId={props.roundId}
+        fetchApplicants={fetchApplicants}
+        setSelectedRows={setSelectedRows}
       />
     </>
   );
