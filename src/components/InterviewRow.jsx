@@ -21,7 +21,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import moment from "moment";
 import { toast } from "react-toastify";
 
-
 const style = {
   position: "absolute",
   top: "50%",
@@ -35,6 +34,21 @@ const style = {
   borderRadius: `10px`,
 };
 
+const addApplicantStyle = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: { xs: 350, sm: `400px` },
+  bgcolor: "background.paper",
+  border: "1px solid #000",
+  boxShadow: 24,
+  p: 4,
+  borderRadius: `10px`,
+  maxHeight: `90%`,
+  overflow: `scroll`,
+};
+
 const useStyles = makeStyles({
   createRoundBtnContainer: {
     display: `flex`,
@@ -44,7 +58,7 @@ const useStyles = makeStyles({
   },
   inputTestModal: {
     width: `100%`,
-    marginTop: `10px !important`,
+    marginTop: `15px !important`,
   },
   sectionContentContainer: {
     marginTop: `10px`,
@@ -85,6 +99,11 @@ const useStyles = makeStyles({
     gap: `30px`,
     overflow: `scroll`,
   },
+  saveQuestionBtnContainer: {
+    display: `flex`,
+    justifyContent: `flex-end`,
+    marginTop: `15px`,
+  },
 });
 
 export default function InterviewRow(props) {
@@ -97,6 +116,7 @@ export default function InterviewRow(props) {
     assigneeTypography,
     card,
     sectionsContainer,
+    saveQuestionBtnContainer,
   } = useStyles();
 
   const { id, roundId } = useParams();
@@ -105,8 +125,9 @@ export default function InterviewRow(props) {
   const [interview, setInterview] = useState(props.interview);
   const [timeAssigned, setTimeAssigned] = useState(dayjs(""));
   const [timeEntered, setTimeEntered] = useState(dayjs(""));
+  const isMaster = useSelector((state) => state.user.isMaster);
   const [selectedPanel, setSelectedPanel] = useState("None");
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("Completed");
   const [interviewScore, setInterviewScore] = useState(null);
   const interviewStatusChoices = props.interviewStatusChoices;
   const panelNames = props.panelNames;
@@ -148,7 +169,7 @@ export default function InterviewRow(props) {
 
   const handleSaveInterviewMarks = () => {
     const scores = [];
-    console.log(interviewScore.interview_remarks)
+    console.log(interviewScore.interview_remarks);
     interviewScore.round_details.sections.map((section, index) => {
       scores.push({
         section: section.id,
@@ -167,19 +188,18 @@ export default function InterviewRow(props) {
       data: {
         scores,
       },
-    })
-      .catch((response) => {
-        toast.error(response.message, {
-          position: "bottom-right",
-          autoClose: 4000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
+    }).catch((response) => {
+      toast.error(response.message, {
+        position: "bottom-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
       });
+    });
     axios({
       method: "patch",
       url: `http://localhost:8000/api/interviews/${interview.id}/`,
@@ -216,6 +236,7 @@ export default function InterviewRow(props) {
       setSelectedPanel(interview.panel ? interview.panel : "");
       setSelectedStatus(interview.completed ? "Completed" : "Pending");
     }
+    console.log(interview);
   }, [openEditModal]);
 
   const scoreModal = (
@@ -260,7 +281,11 @@ export default function InterviewRow(props) {
                 </InputAdornment>
               ),
             }}
-            defaultValue={interviewScore && interviewScore.interview_remarks ? interviewScore.interview_remarks : ""}
+            defaultValue={
+              interviewScore && interviewScore.interview_remarks
+                ? interviewScore.interview_remarks
+                : ""
+            }
           />
         </div>
 
@@ -347,16 +372,16 @@ export default function InterviewRow(props) {
         if (response.response.status === 403) {
           errorTitle = "You are not permitted to view interview marks.";
         }
-        // toast.error(errorTitle, {
-        //   position: "bottom-right",
-        //   autoClose: 4000,
-        //   hideProgressBar: false,
-        //   closeOnClick: true,
-        //   pauseOnHover: true,
-        //   draggable: true,
-        //   progress: undefined,
-        //   theme: "light",
-        // });
+        toast.error(errorTitle, {
+          position: "bottom-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
       });
   };
 
@@ -439,7 +464,7 @@ export default function InterviewRow(props) {
             ))}
         </TextField>
         <div className={createRoundBtnContainer}>
-        <Button
+          <Button
             variant="contained"
             onClick={() => props.handleDeleteRow(interview.id)}
             color="error"
@@ -453,6 +478,118 @@ export default function InterviewRow(props) {
       </Box>
     </Modal>
   );
+
+  const [selectedApplicant, setSelectedApplicant] = useState(null);
+
+  const handleOpenApplicantDetailsModal = () => {
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/applicants/${interview.applicant_details.id}/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    }).then((response) => {
+      console.log(response.data);
+      setOpenApplicantDetialsModal(true);
+      setSelectedApplicant(response.data);
+    });
+  };
+
+  const handleApplicantSave = () => {
+    const applicantId = selectedApplicant.id;
+    axios({
+      method: "patch",
+      url: `http://localhost:8000/api/applicants/${applicantId}/`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+      data: {
+        name: document.getElementById("details-applicant-name").value,
+        enrolment_number: document.getElementById("details-applicant-enrolment")
+          .value,
+        mobile: document.getElementById("details-applicant-mobile").value,
+        email: document.getElementById("details-applicant-email").value,
+      },
+    }).then((response) => {
+      console.log(response.data);
+      toast.success("Applicant Details Saved", {
+        position: "bottom-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        toastId: "success1",
+      });
+      setOpenApplicantDetialsModal(false);
+    });
+  };
+
+  const [openApplicantDetailsModal, setOpenApplicantDetialsModal] =
+    useState(false);
+
+  const applicantDetailsModal = (
+    <Modal
+      open={openApplicantDetailsModal}
+      onClose={() => setOpenApplicantDetialsModal(false)}
+    >
+      <Box sx={addApplicantStyle}>
+        <Typography
+          id="modal-modal-title"
+          variant="h6"
+          component="h2"
+          gutterBottom
+        >
+          {selectedApplicant && selectedApplicant.name}
+        </Typography>
+        <Typography variant="subtitle1" gutterBottom>
+          <b>Enrolment Number</b>{" "}
+          {selectedApplicant && selectedApplicant.enrolment_number}
+        </Typography>
+        <TextField
+          variant="outlined"
+          className={inputTestModal}
+          color="primary"
+          defaultValue={selectedApplicant && selectedApplicant.mobile}
+          id="details-applicant-mobile"
+          label="Mobile"
+        />
+        <TextField
+          variant="outlined"
+          className={inputTestModal}
+          color="primary"
+          defaultValue={selectedApplicant && selectedApplicant.email}
+          id="details-applicant-email"
+          label="Email Address"
+        />
+        <div className={saveQuestionBtnContainer}>
+          <Button variant="contained" onClick={handleApplicantSave}>
+            Save
+          </Button>
+        </div>
+      </Box>
+    </Modal>
+  );
+
+  const handleSelectRow = (event) => {
+    console.log(props.selectedApplicantIds);
+    if (event.target.checked) {
+      props.setSelectedRows((prevState) => [...prevState, event.target.value]);
+      props.setSelectedApplicantIds((prevState) => [
+        ...prevState,
+        interview.applicant,
+      ]);
+    } else {
+      props.setSelectedRows((prevState) =>
+        prevState.filter((applicantId) => applicantId !== event.target.value)
+      );
+      props.setSelectedApplicantIds((prevState) =>
+        prevState.filter((applicantId) => applicantId !== interview.applicant)
+      );
+    }
+  };
 
   return (
     <>
@@ -468,11 +605,21 @@ export default function InterviewRow(props) {
           <Checkbox
             color="primary"
             checked={props.selectedRows.indexOf(String(interview.id)) !== -1}
-            onClick={props.handleSelectRow}
+            onClick={handleSelectRow}
             value={interview.id}
           />
         </TableCell>
-        <TableCell align="center">{interview.applicant_details.name}</TableCell>
+        <TableCell align="center">
+          <a
+            onClick={handleOpenApplicantDetailsModal}
+            style={{
+              cursor: `pointer`,
+              color: `#1976d2`,
+            }}
+          >
+            {interview.applicant_details.name}
+          </a>
+        </TableCell>
         <TableCell align="center">
           {interview.applicant_details.enrolment_number}
         </TableCell>
@@ -515,6 +662,7 @@ export default function InterviewRow(props) {
       </TableRow>
       {editInterviewModal}
       {scoreModal}
+      {applicantDetailsModal}
     </>
   );
 }
