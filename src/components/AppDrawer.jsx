@@ -63,7 +63,6 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: `flex-end`,
     marginTop: `15px`,
   },
-
   profileDetailsContainer: {
     display: `flex`,
     flexDirection: `column`,
