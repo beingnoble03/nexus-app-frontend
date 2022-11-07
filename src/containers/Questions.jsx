@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Typography, Button } from "@mui/material";
+import { Typography, Button, Checkbox, ListItem, List, ListItemButton, ListItemAvatar, ListItemText, Avatar, InputAdornment } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { TextField, MenuItem } from "@mui/material";
 import axios from "axios";
@@ -16,6 +16,7 @@ import {
 } from "../app/features/drawerSlice";
 import BlueBanner from "../components/BlueBanner";
 import { toast } from "react-toastify";
+import { Search } from "@mui/icons-material";
 
 const style = {
   position: "absolute",
@@ -110,7 +111,8 @@ export default function Questions(props) {
   const [test, setTest] = useState(null);
   const [openQuestionModal, setOpenQuestionModal] = useState(false);
   const [openSectionModal, setOpenSectionModal] = useState(false);
-  const imgMembers = useSelector((state) => state.imgMember.imgMembers);
+  // const imgMembers = useSelector((state) => state.imgMember.imgMembers);
+  const [selectedImgMembers, setSelectedImgMembers] = useState([])
   const [refresh, setRefresh] = useState(0);
   const dispatch = useDispatch();
 
@@ -128,7 +130,7 @@ export default function Questions(props) {
       },
     }).then((response) => {
       console.log(response.data);
-      setSelectedSection(null);
+      setSelectedSection("");
       setOpenSectionModal(false);
       setRefresh(refresh + 1);
     });
@@ -152,10 +154,12 @@ export default function Questions(props) {
           title: questionTitle,
           maximum_marks: questionMaximumMarks,
           section: selectedSection.id,
+          assignee: selectedImgMembers,
         },
       })
         .then((response) => {
           console.log(response.data);
+          setSelectedImgMembers([])
           setOpenQuestionModal(false);
           const newQuestionsList = [
             ...selectedSection.questions,
@@ -208,9 +212,18 @@ export default function Questions(props) {
   };
 
   const handleChange = (event) => {
-    setSelectedSection(event.target.value);
+    const newSelectedSection = test.sections.find(section => section.id === event.target.value)
+    setSelectedSection(newSelectedSection);
     console.log(event.target.value);
   };
+
+  const handleCheckboxChange = (event) => {
+    if (event.target.checked) {
+      setSelectedImgMembers(prevState => [...prevState, parseInt(event.target.value)])
+    } else {
+      setSelectedImgMembers(prevState => prevState.filter(id_ => id_ !== parseInt(event.target.value)))
+    }
+}
 
   const handleDeleteQuestion = (questionId) => {
     axios({
@@ -223,6 +236,8 @@ export default function Questions(props) {
       const newQuestionsList = selectedSection.questions.filter(
         (question) => question.id !== questionId
       );
+      console.log(newQuestionsList)
+      setSelectedSection(selectedSection => ({...selectedSection, questions: newQuestionsList}))
       selectedSection.questions = newQuestionsList;
       toast.success("Question deleted successfully.", {
         position: "bottom-right",
@@ -237,10 +252,23 @@ export default function Questions(props) {
     });
   };
 
+  const handleQuestionModalClose = () => {
+    setOpenQuestionModal(false)
+    setSelectedImgMembers([])
+  }
+
+  const [imgMembers, setImgMembers] = useState([])
+
+  const [search, setSearch] = useState("");
+
+  const handleSearchInputChange = (event) => {
+    setSearch(event.target.value);
+  };
+
   const createQuestionModal = (
     <Modal
       open={openQuestionModal}
-      onClose={() => setOpenQuestionModal(false)}
+      onClose={handleQuestionModalClose}
       aria-labelledby="modal-modal-title"
       aria-describedby="modal-modal-description"
     >
@@ -263,12 +291,57 @@ export default function Questions(props) {
         <Typography variant="subtitle1">
           <b>Assignee</b>
         </Typography>
-        <div className={imgMembersContainer}>
-          {imgMembers &&
-            imgMembers.filter(imgMember => imgMember.name !== null).map((imgMember, index) => (
-              <span key={index}>{imgMember.name && <div key={index}>{imgMember.name}</div>}</span>
-            ))}
-        </div>
+        <TextField
+          id="standard-search"
+          type="search"
+          variant="outlined"
+          size="small"
+          placeholder="Search"
+          sx={{
+            width: `100%`,
+            margin: `10px 0px`,
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search />
+              </InputAdornment>
+            ),
+          }}
+          value={search}
+          onChange={handleSearchInputChange}
+        />
+        <List
+            dense
+            sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper", maxHeight: `150px`, overflow: `scroll` }}
+          >
+            {imgMembers
+              .filter((imgMember) => imgMember.name !== null)
+              .map(
+                (imgMember, index) =>
+                  imgMember.name && (
+                    <ListItem
+                      key={index}
+                      secondaryAction={
+                        <Checkbox
+                          checked={selectedImgMembers.indexOf(imgMember.id) !== -1}
+                          onChange={handleCheckboxChange}
+                          value={imgMember.id}
+                          id={String(index)}
+                        />
+                      }
+                      disablePadding
+                    >
+                      <ListItemButton>
+                        <ListItemAvatar>
+                          <Avatar src={imgMember.image}/>
+                        </ListItemAvatar>
+                        <ListItemText primary={imgMember.name} />
+                      </ListItemButton>
+                    </ListItem>
+                  )
+              )}
+          </List>
         <div className={saveQuestionBtnContainer}>
           <Button variant="contained" onClick={handleCreateQuestion}>
             Create
@@ -322,16 +395,17 @@ export default function Questions(props) {
       });
   }, [refresh]);
 
+
   useEffect(() => {
     axios({
       method: "get",
-      url: `http://localhost:8000/api/members/namesListNot2y`,
+      url: `http://localhost:8000/api/members/namesListNot2y/?search=${search}`,
       headers: {
         Authorization: "Token " + localStorage.getItem("token"),
       },
     })
       .then((response) => {
-        dispatch(fetchedImgMembers(response.data));
+        setImgMembers(response.data)
       })
       .catch((response) => {
         console.log(response.message);
@@ -339,7 +413,7 @@ export default function Questions(props) {
     dispatch(selectedSeasonIdChanged(id));
     dispatch(fetchRounds());
     dispatch(roundsVisibilityChanged(true));
-  }, []);
+  }, [search, ]);
 
   return (
     <div className={mainContainer}>
@@ -352,6 +426,7 @@ export default function Questions(props) {
             <Button
               variant="outlined"
               onClick={() => setOpenQuestionModal(true)}
+              disabled={!selectedSection}
             >
               Add Question
             </Button>
@@ -366,13 +441,14 @@ export default function Questions(props) {
                 id="input-selected-section"
                 select
                 label="Select Section"
-                value={selectedSection}
+                value={selectedSection.id}
                 onChange={handleChange}
                 variant="filled"
                 className={inputSelectedSection}
+                disabled={!test.sections.length}
               >
                 {test.sections.map((section, index) => (
-                  <MenuItem key={index} value={section}>
+                  <MenuItem key={index} value={section.id}>
                     {section.title}
                   </MenuItem>
                 ))}
@@ -382,14 +458,20 @@ export default function Questions(props) {
         </div>
         <div className={questionItemContainer}>
           {selectedSection ? (
-            selectedSection.questions.map((question, index) => (
-              <QuestionItem
-                id={question.id}
-                key={question.id}
-                count={index + 1}
-                handleDeleteQuestion={handleDeleteQuestion}
-              />
-            ))
+            selectedSection.questions.length === 0 ? (
+              <div className={blueBannerContainer}>
+                <BlueBanner message="No questions available for this section." />
+              </div>
+            ) : (
+              selectedSection.questions.map((question, index) => (
+                <QuestionItem
+                  id={question.id}
+                  key={question.id}
+                  count={index + 1}
+                  handleDeleteQuestion={handleDeleteQuestion}
+                />
+              ))
+            )
           ) : (
             <div className={blueBannerContainer}>
               <BlueBanner message="No section selected. Select section to find questions." />

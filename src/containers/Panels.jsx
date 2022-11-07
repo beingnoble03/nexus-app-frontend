@@ -12,9 +12,17 @@ import {
   MenuItem,
   Button,
   Checkbox,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemAvatar,
+  Avatar,
+  ListItemText,
+  InputAdornment,
 } from "@mui/material";
 import axios from "axios";
 import PanelItem from "../components/PanelItem";
+import { Search } from "@mui/icons-material";
 
 const style = {
   position: "absolute",
@@ -87,7 +95,7 @@ const useStyles = makeStyles({
   },
   inputRoundType: {
     width: `100%`,
-    marginTop: `10px !important`,
+    margin: `5px 0px !important`,
   },
 });
 
@@ -202,6 +210,11 @@ export default function Panels() {
     })
   }
 
+  const [search, setSearch] = useState("");
+  const handleSearchInputChange = (event) => {
+    setSearch(event.target.value);
+  };
+
   const createPanelModal = (
     <Modal
       open={openPanelModal}
@@ -252,20 +265,58 @@ export default function Panels() {
         <Typography variant="subtitle1">
           <b>IMG Members</b>
         </Typography>
-        <div className={imgMembersContainer}>
-          {imgMembers &&
-            imgMembers.map((imgMember, index) => (
-              <>
-                {imgMember.name && (
-                  <div key={imgMember.id}>
-                  <Checkbox 
-                  onChange={handleCheckboxChange}
-                  value={imgMember.id}
-                  />{imgMember.name}</div>
-                )}
-              </>
-            ))}
-        </div>
+        <TextField
+          id="standard-search"
+          type="search"
+          variant="outlined"
+          size="small"
+          placeholder="Search"
+          sx={{
+            width: `100%`,
+            margin: `10px 0px`,
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search />
+              </InputAdornment>
+            ),
+          }}
+          value={search}
+          onChange={handleSearchInputChange}
+        />
+        <List
+            dense
+            sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper", maxHeight: `150px`, overflow: `scroll` }}
+          >
+            {imgMembers &&
+            imgMembers
+              .filter((imgMember) => imgMember.name !== null)
+              .map(
+                (imgMember, index) =>
+                  imgMember.name && (
+                    <ListItem
+                      key={index}
+                      secondaryAction={
+                        <Checkbox
+                          checked={selectedImgMembers.indexOf(imgMember.id) !== -1}
+                          onChange={handleCheckboxChange}
+                          value={imgMember.id}
+                          id={index}
+                        />
+                      }
+                      disablePadding
+                    >
+                      <ListItemButton>
+                        <ListItemAvatar>
+                          <Avatar src={imgMember.image}/>
+                        </ListItemAvatar>
+                        <ListItemText primary={imgMember.name} />
+                      </ListItemButton>
+                    </ListItem>
+                  )
+              )}
+          </List>
         <div className={saveQuestionBtnContainer}>
           <Button variant="contained" onClick={handleCreatePanel}>
             Create
@@ -279,7 +330,7 @@ export default function Panels() {
   useEffect(() => {
     axios({
       method: "get",
-      url: `http://localhost:8000/api/members/namesListNot2y`,
+      url: `http://localhost:8000/api/members/namesListNot2y/?search=${search}`,
       headers: {
         Authorization: "Token " + localStorage.getItem("token"),
       },
@@ -292,7 +343,7 @@ export default function Panels() {
       });
     dispatch(fetchPanels());
     dispatch(titleChanged("Panels"));
-  }, [refresh, ]);
+  }, [refresh, search, ]);
 
   useEffect(() => {
     axios({

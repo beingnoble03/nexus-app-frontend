@@ -8,12 +8,21 @@ import {
   Card,
   CardActions,
   Tooltip,
+  ListItem,
+  ListItemButton,
+  ListItemAvatar,
+  Avatar,
+  ListItemText,
+  List,
+  InputAdornment,
 } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { TextField, MenuItem } from "@mui/material";
 import axios from "axios";
 import { Modal, Box } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
+import { Search } from "@mui/icons-material";
+import { fetchedImgMembers } from "../app/features/imgMemberSlice";
 
 const style = {
   position: "absolute",
@@ -39,6 +48,7 @@ const useStyles = makeStyles({
   assigneeImage: {
     width: `25px`,
     height: `25px`,
+    borderRadius: `50%`,
   },
   assigneeBadge: {
     display: `flex`,
@@ -73,7 +83,7 @@ const useStyles = makeStyles({
   },
   inputRoundType: {
     width: `100%`,
-    marginTop: `10px !important`,
+    margin: `5px 0px !important`,
   },
   card: {
     width: `350px`,
@@ -132,6 +142,7 @@ export default function PanelItem(props) {
   const imgMembers = useSelector((state) => state.imgMember.imgMembers);
   const [panel, setPanel] = useState(null);
   const [selectedImgMembers, setSelectedImgMembers] = useState([]);
+  const dispatch = useDispatch();
 
   const handleStatusChange = (event) => {
     setStatus(event.target.value);
@@ -143,16 +154,11 @@ export default function PanelItem(props) {
 
   const handleModalClose = () => {
     setOpenPanelModal(false);
-    setSelectedImgMembers([]);
   };
 
   const handleModalOpen = () => {
     setOpenPanelModal(true);
   };
-
-  useEffect(() => {
-    console.log(openPanelModal)
-  }, [openPanelModal ])
 
   const handleCheckboxChange = (event) => {
     if (event.target.checked) {
@@ -160,14 +166,10 @@ export default function PanelItem(props) {
         ...prevState,
         Number(event.target.value),
       ]);
-      console.log(selectedImgMembers);
-      console.log("checked");
     } else {
       setSelectedImgMembers((prevState) =>
         prevState.filter((id_) => id_ !== Number(event.target.value))
       );
-      console.log(selectedImgMembers);
-      console.log("unchecked");
     }
   };
 
@@ -207,13 +209,15 @@ export default function PanelItem(props) {
     });
   };
 
+  const [search, setSearch] = useState("");
+  const handleSearchInputChange = (event) => {
+    setSearch(event.target.value);
+  };
+
   const panelModal = (
     <>
       {panel && (
-        <Modal
-          open={openPanelModal}
-          onClose={handleModalClose}
-        >
+        <Modal open={openPanelModal} onClose={handleModalClose}>
           <Box sx={style}>
             <Typography id="modal-modal-title" variant="h6" component="h2">
               Editing Panel
@@ -258,27 +262,66 @@ export default function PanelItem(props) {
             <Typography variant="subtitle1">
               <b>IMG Members</b>
             </Typography>
-            <div className={imgMembersContainer}>
+        <TextField
+          id="standard-search"
+          type="search"
+          variant="outlined"
+          size="small"
+          placeholder="Search"
+          sx={{
+            width: `100%`,
+            margin: `10px 0px`,
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search />
+              </InputAdornment>
+            ),
+          }}
+          value={search}
+          onChange={handleSearchInputChange}
+        />
+            <List
+              dense
+              sx={{
+                width: "100%",
+                maxWidth: 360,
+                bgcolor: "background.paper",
+                maxHeight: `150px`,
+                overflow: `scroll`,
+              }}
+            >
               {imgMembers &&
-                imgMembers.map((imgMember, index) => (
-                  <>
-                    {imgMember.name && (
-                      <div key={imgMember.id}>
-                        <Checkbox
-                          checked={
-                            selectedImgMembers.indexOf(imgMember.id) !== -1
+                imgMembers
+                  .filter((imgMember) => imgMember.name !== null)
+                  .map(
+                    (imgMember, index) =>
+                      imgMember.name && (
+                        <ListItem
+                          key={index}
+                          secondaryAction={
+                            <Checkbox
+                              checked={
+                                selectedImgMembers.indexOf(imgMember.id) !== -1
+                              }
+                              onChange={handleCheckboxChange}
+                              value={imgMember.id}
+                              id={String(index)}
+                            />
                           }
-                          onChange={handleCheckboxChange}
-                          value={imgMember.id}
-                          id={"checkbox-" + String(imgMember.id)}
-                          key={imgMember.id}
-                        />
-                        {imgMember.name}
-                      </div>
-                    )}
-                  </>
-                ))}
-            </div>
+                          disablePadding
+                        >
+                          <ListItemButton>
+                            <ListItemAvatar>
+                              <Avatar src={imgMember.image} />
+                            </ListItemAvatar>
+                            <ListItemText primary={imgMember.name} />
+                          </ListItemButton>
+                        </ListItem>
+                      )
+                  )}
+            </List>
             <div className={saveQuestionBtnContainer}>
               <Button
                 variant="contained"
@@ -296,6 +339,24 @@ export default function PanelItem(props) {
       )}
     </>
   );
+
+
+  useEffect(() => {
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/members/namesListNot2y/?search=${search}`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    })
+      .then((response) => {
+        dispatch(fetchedImgMembers(response.data));
+      })
+      .catch((response) => {
+        console.log(response.message);
+      });
+  }, [search, ]);
+
 
   useEffect(() => {
     axios({
@@ -315,40 +376,42 @@ export default function PanelItem(props) {
   }, []);
 
   return (
-    <Card className={card} onClick={handleModalOpen}>
-      {panel && (
-        <CardContent>
-          <Typography variant="h6">
-            <b>Panel {props.count}</b>
-          </Typography>
-          <Typography variant="subtitle1">{panel.place}</Typography>
-          <Typography variant="subtitle2">
-            <b>Panel Status</b>
-          </Typography>
-          <Typography>{panel.status}</Typography>
-          <Typography variant="subtitle2">
-            <b>Panel Availability</b>
-          </Typography>
-          <Typography>
-            {panel.available ? "Available" : "Unavailable"}
-          </Typography>
-          <Typography variant="subtitle2">
-            <b>IMG Members</b>
-          </Typography>
-          <div className={badgeContainer}>
-            {panel.members_details.length ? (
-              panel.members_details.map((member, index) => (
-                <Tooltip title={member.name}>
-                  <img className={assigneeImage} src={member.image} />
-                </Tooltip>
-              ))
-            ) : (
-              <>No member present</>
-            )}
-          </div>
-        </CardContent>
-      )}
+    <>
+      <Card className={card} onClick={handleModalOpen}>
+        {panel && (
+          <CardContent>
+            <Typography variant="h6">
+              <b>Panel {props.count}</b>
+            </Typography>
+            <Typography variant="subtitle1">{panel.place}</Typography>
+            <Typography variant="subtitle2">
+              <b>Panel Status</b>
+            </Typography>
+            <Typography>{panel.status}</Typography>
+            <Typography variant="subtitle2">
+              <b>Panel Availability</b>
+            </Typography>
+            <Typography>
+              {panel.available ? "Available" : "Unavailable"}
+            </Typography>
+            <Typography variant="subtitle2">
+              <b>IMG Members</b>
+            </Typography>
+            <div className={badgeContainer}>
+              {panel.members_details.length ? (
+                panel.members_details.map((member, index) => (
+                  <Tooltip title={member.name}>
+                    <img className={assigneeImage} src={member.image} />
+                  </Tooltip>
+                ))
+              ) : (
+                <>No member present</>
+              )}
+            </div>
+          </CardContent>
+        )}
+      </Card>
       {panelModal}
-    </Card>
+    </>
   );
 }

@@ -9,12 +9,20 @@ import {
   CardActions,
   Divider,
   Tooltip,
+  InputAdornment,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemAvatar,
+  ListItemText,
+  Avatar,
 } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { TextField, MenuItem, Checkbox } from "@mui/material";
 import axios from "axios";
 import { Modal, Box } from "@mui/material";
 import { toast } from "react-toastify";
+import { Search } from "@mui/icons-material";
 
 const style = {
   position: "absolute",
@@ -40,6 +48,7 @@ const useStyles = makeStyles({
   assigneeImage: {
     width: `25px`,
     height: `25px`,
+    borderRadius: `50%`,
   },
   assigneeBadge: {
     display: `flex`,
@@ -98,29 +107,28 @@ export default function QuestionItem(props) {
   } = useStyles();
 
   const [openQuestionModal, setOpenQuestionModal] = useState(false);
-  const imgMembers = useSelector((state) => state.imgMember.imgMembers);
+  const [imgMembers, setImgMembers] = useState([]);
+  // const imgMembers = useSelector((state) => state.imgMember.imgMembers);
   const [question, setQuestion] = useState(null);
   const [selectedImgMembers, setSelectedImgMembers] = useState([]);
 
   const handleModalClose = () => {
     setOpenQuestionModal(false);
-    setSelectedImgMembers([]);
   };
 
   const handleModalOpen = () => {
     setOpenQuestionModal(true);
-    setSelectedImgMembers(question.assignee);
   };
 
   const handleCheckboxChange = (event) => {
     if (event.target.checked) {
       setSelectedImgMembers((prevState) => [
         ...prevState,
-        parseInt(event.target.value),
+        Number(event.target.value),
       ]);
     } else {
       setSelectedImgMembers((prevState) =>
-        prevState.filter((id_) => id_ !== parseInt(event.target.value))
+        prevState.filter((id_) => id_ !== Number(event.target.value))
       );
     }
   };
@@ -130,6 +138,8 @@ export default function QuestionItem(props) {
       "input-question-maximum-marks"
     ).value;
     const title = document.getElementById("input-question-title").value;
+    setOpenQuestionModal(false);
+
     axios({
       method: "patch",
       url: `http://localhost:8000/api/questions/${question.id}/`,
@@ -144,9 +154,9 @@ export default function QuestionItem(props) {
       },
     })
       .then((response) => {
+        // setOpenQuestionModal(false);
         console.log(response.data);
         setQuestion(response.data);
-        setOpenQuestionModal(false);
       })
       .catch((response) => {
         toast.error(response.data, {
@@ -171,75 +181,132 @@ export default function QuestionItem(props) {
       },
     }).then((response) => {
       setQuestion(response.data);
+      setSelectedImgMembers(response.data.assignee);
     });
   }, []);
 
-  const questionModal = (
-    <>
-      {question && (
-        <Modal open={openQuestionModal} onClose={() => setOpenQuestionModal(false)}>
-          <Box sx={style}>
-            <Typography id="modal-modal-title" variant="h6" component="h2">
-              Editing Question
-            </Typography>
-            <TextField
-              id="input-question-title"
-              label="Question Title"
-              variant="filled"
-              className={inputQuestionTitle}
-              defaultValue={question.title}
-            />
+  const [search, setSearch] = useState("");
+  const handleSearchInputChange = (event) => {
+    setSearch(event.target.value);
+  };
 
-            <TextField
-              id="input-question-maximum-marks"
-              label="Question Maximum Marks"
-              variant="filled"
-              className={inputQuestionTitle}
-              defaultValue={question.maximum_marks}
-            />
-            <Typography variant="subtitle1">
-              <b>Assignee</b>
-            </Typography>
-            <div className={imgMembersContainer}>
-              {imgMembers.filter(imgMember => imgMember.name !== null).map((imgMember, index) => (
-                <span key={index}>
-                  {imgMember.name && (
-                    <div key={index}>
-                      <Checkbox
-                        defaultChecked={
-                          question.assignee.indexOf(imgMember.id) !== -1
-                        }
-                        onChange={handleCheckboxChange}
-                        value={imgMember.id}
-                      />
-                      {imgMember.name}
-                    </div>
-                  )}
-                </span>
-              ))}
-            </div>
-            <div className={saveQuestionBtnContainer}>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  handleModalClose()
-                  props.handleDeleteQuestion(question.id)
-                }}
-                color="error"
-              >
-                Delete
-              </Button>
-              <Button variant="contained" onClick={handleSaveQuestion}>
-                Save
-              </Button>
-            </div>
-          </Box>
-        </Modal>
-      )}
-    </>
+  const questionModal = question && (
+    <Modal open={openQuestionModal} onClose={handleModalClose}>
+      <Box sx={style}>
+        <Typography id="modal-modal-title" variant="h6" component="h2">
+          Editing Question
+        </Typography>
+        <TextField
+          id="input-question-title"
+          label="Question Title"
+          variant="filled"
+          className={inputQuestionTitle}
+          defaultValue={question.title}
+        />
+
+        <TextField
+          id="input-question-maximum-marks"
+          label="Question Maximum Marks"
+          variant="filled"
+          className={inputQuestionTitle}
+          defaultValue={question.maximum_marks}
+        />
+        <Typography variant="subtitle1">
+          <b>Assignee</b>
+        </Typography>
+        <TextField
+          id="standard-search"
+          type="search"
+          variant="outlined"
+          size="small"
+          placeholder="Search"
+          sx={{
+            width: `100%`,
+            margin: `10px 0px`,
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search />
+              </InputAdornment>
+            ),
+          }}
+          value={search}
+          onChange={handleSearchInputChange}
+        />
+          {!imgMembers.length &&
+          <Typography variant="caption">
+            No members with matching parameters.
+          </Typography>
+          }
+          <List
+            dense
+            sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper", maxHeight: `150px`, overflow: `scroll` }}
+          >
+            {imgMembers
+              .filter((imgMember) => imgMember.name !== null)
+              .map(
+                (imgMember, index) =>
+                  imgMember.name && (
+                    <ListItem
+                      key={index}
+                      secondaryAction={
+                        <Checkbox
+                          checked={selectedImgMembers.indexOf(imgMember.id) !== -1}
+                          onChange={handleCheckboxChange}
+                          value={imgMember.id}
+                          id={index}
+                        />
+                      }
+                      disablePadding
+                    >
+                      <ListItemButton>
+                        <ListItemAvatar>
+                          <Avatar src={imgMember.image}/>
+                        </ListItemAvatar>
+                        <ListItemText primary={imgMember.name} />
+                      </ListItemButton>
+                    </ListItem>
+                  )
+              )}
+          </List>
+        <div className={saveQuestionBtnContainer}>
+          <Button
+            variant="contained"
+            onClick={() => {
+              handleModalClose();
+              props.handleDeleteQuestion(question.id);
+            }}
+            color="error"
+          >
+            Delete
+          </Button>
+          <Button variant="contained" onClick={handleSaveQuestion}>
+            Save
+          </Button>
+        </div>
+      </Box>
+    </Modal>
   );
 
+  useEffect(() => {
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/members/namesListNot2y/?search=${search}`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    })
+      .then((response) => {
+        setImgMembers(response.data);
+      })
+      .catch((response) => {
+        console.log(response.message);
+      });
+  }, [search]);
+
   return (
+    <>
     <Card className={card} onClick={handleModalOpen}>
       {question && (
         <CardContent>
@@ -271,7 +338,9 @@ export default function QuestionItem(props) {
           </div>
         </CardContent>
       )}
-      {questionModal}
+      {/* {questionModal} */}
     </Card>
+    {questionModal}
+    </>
   );
 }
