@@ -4,7 +4,6 @@ import { Box, Typography } from "@mui/material"
 const style = {
     width: `100%`,
     background: `radial-gradient(circle, rgba(218,111,158,1) 0%, rgba(25,118,210,1) 80%)`,
-    // bgcolor: `#1976d2`,
     padding: `5px`,
     color: `white`,
     textAlign: `center`,

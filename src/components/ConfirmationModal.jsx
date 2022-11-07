@@ -29,6 +29,7 @@ export default function ConfirmationModal(props) {
   const open = props.openConfirmationModal;
   const handleAbortButton = () => {
     props.setOpenConfirmationModal(false);
+    props.setSelectedRound("");
   };
   const handleConfirmButton = () => {
     if (props.roundType === "I") {
@@ -44,7 +45,19 @@ export default function ConfirmationModal(props) {
           completed: false,
         },
       }).then((response) => {
-        console.log(response.data);
+        props.setSelectedRound("");
+        props.setOpenConfirmationModal(false);
+        toast.success("Added selected applicants.", {
+          position: "bottom-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          toastId: "success1",
+        });
       });
     } else {
       props.applicantIds.map((value, index) => {
@@ -59,7 +72,8 @@ export default function ConfirmationModal(props) {
             round: [props.roundId],
           },
         }).then((response) => {
-            props.setOpenConfirmationModal(false)
+          props.setSelectedRound("");
+          props.setOpenConfirmationModal(false);
           toast.success("Added selected applicants.", {
             position: "bottom-right",
             autoClose: 4000,
