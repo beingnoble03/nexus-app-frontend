@@ -13,6 +13,7 @@ import Questions from "./containers/Questions";
 import Panels from "./containers/Panels";
 import Interview from "./containers/Interview";
 import Test from "./containers/Test";
+import CreditsFooter from "./components/CreditsFooter";
 
 const useStyles = makeStyles({
   root: {
@@ -55,6 +56,7 @@ function App() {
                 <Route exact path="/season/:id/test/:testId/questions" element={<Questions />} />
               </Routes>
           </div>
+          <CreditsFooter />
         </div>
       </div>
       </BrowserRouter>
