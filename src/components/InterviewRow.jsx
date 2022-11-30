@@ -131,7 +131,6 @@ export default function InterviewRow(props) {
   const [interviewScore, setInterviewScore] = useState(null);
   const interviewStatusChoices = props.interviewStatusChoices;
   const panelNames = props.panelNames;
-  const navigate = useNavigate();
 
   const handleEditInterview = () => {
     setOpenEditModal(true);
@@ -146,43 +145,21 @@ export default function InterviewRow(props) {
   };
 
   const handleSaveInterview = () => {
-    props.ws.send(JSON.stringify({
-      action: 'update_interview',
-      data: {
-        interview: interview.id,
-        applicant: interview.applicant,
-        completed: selectedStatus === "Completed",
-        round: roundId,
-        panel: selectedPanel === "None" ? null : selectedPanel,
-        time_assigned: timeAssigned,
-        time_entered: timeEntered,
-      }
-    }))
-    setOpenEditModal(false)
-    props.ws.onmessage = (e) => {
-      const data = JSON.parse(e.data)
-      if(data.action_type === "updated_interview" && interview.id === data.data["id"]){
-        setInterview(data.data)
-      }
-    }
-    // axios({
-    //   method: "patch",
-    //   url: `http://localhost:8000/api/interviews/${interview.id}/`,
-    //   headers: {
-    //     Authorization: "Token " + localStorage.getItem("token"),
-    //   },
-    //   data: {
-    //     applicant: interview.applicant,
-    //     completed: selectedStatus === "Completed",
-    //     round: roundId,
-    //     panel: selectedPanel === "None" ? null : selectedPanel,
-    //     time_assigned: timeAssigned,
-    //     time_entered: timeEntered,
-    //   },
-    // }).then((response) => {
-    //   setInterview(response.data);
-    //   setOpenEditModal(false);
-    // });
+    props.ws.send(
+      JSON.stringify({
+        action: "update_interview",
+        data: {
+          interview: interview.id,
+          applicant: interview.applicant,
+          completed: selectedStatus === "Completed",
+          round: roundId,
+          panel: selectedPanel === "None" ? null : selectedPanel,
+          time_assigned: timeAssigned,
+          time_entered: timeEntered,
+        },
+      })
+    );
+    setOpenEditModal(false);
   };
 
   const handleSaveInterviewMarks = () => {
@@ -526,7 +503,14 @@ export default function InterviewRow(props) {
         email: document.getElementById("details-applicant-email").value,
       },
     }).then((response) => {
-      console.log(response.data);
+      props.ws.send(
+        JSON.stringify({
+          action: "fetch_interview",
+          data: {
+            interview: interview.id,
+          },
+        })
+      );
       toast.success("Applicant Details Saved", {
         position: "bottom-right",
         autoClose: 4000,

@@ -63,16 +63,15 @@ const useStyles = makeStyles({
   },
 });
 
-
 export default function InterviewTable(props) {
   const { id, roundId } = useParams();
   const ws = new WebSocket(`ws://localhost:8000/ws/interviews/${roundId}/`);
-  const [interviews, setInterviews] = useState(null);
+  const [interviews, setInterviews] = useState([]);
   const panel = useSelector((state) => state.panel);
   const dispatch = useDispatch();
   const currentPage = useSelector((state) => state.paginator.currentPage);
   const searchParams = useSelector((state) => state.search.searchParams);
-  const isMaster = useSelector(state => state.user.isMaster)
+  const isMaster = useSelector((state) => state.user.isMaster);
   const numOfApplicantsPerPage = 5;
   const reFetchInterviews = props.reFetchInterviews;
   const filterCompleted = useSelector(
@@ -97,11 +96,20 @@ export default function InterviewTable(props) {
     (state) => state.interview.filterTopInterviews
   );
   useEffect(() => {
-    ws.onopen = () => {
-      ws.send(JSON.stringify({
-        action: 'get_interviews',
-      }))
+    // ws.onopen = () => {
+    //   ws.send(
+    //     JSON.stringify({
+    //       action: "get_interviews",
+    //     })
+    //   );
+    // };
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      if (data.action_type === "updated_interview") {
+        handleUpdatedInterview(data.data);
+      }
     };
+
     // ws.onmessage = (e) => {
     //   const data = JSON.parse(e.data)
     //   if(data.action_type === "updated_interview"){
@@ -112,9 +120,26 @@ export default function InterviewTable(props) {
     //   console.log(data)
     // }
     return () => {
-      ws && ws.close()
-    }
-  }, [roundId, ]);
+      ws && ws.close();
+    };
+  }, [roundId]);
+
+  const handleUpdatedInterview = (data) => {
+    setInterviews((prevState) => {
+      const newState = prevState.map((interview) => {
+        if (interview.id === data.id) {
+          return data;
+        }
+        return interview;
+      });
+      console.log(prevState);
+      return newState;
+    });
+  };
+
+  useEffect(() => {
+    console.log(interviews, "hello");
+  }, [interviews]);
 
   const {
     createRoundBtnContainer,
@@ -189,7 +214,6 @@ export default function InterviewTable(props) {
               Math.floor((response.data.length * filterTopInterviews) / 100)
             )
       );
-      console.log(response.data)
       dispatch(currentPageChanged(1));
       dispatch(
         numOfPagesChanged(
@@ -229,14 +253,14 @@ export default function InterviewTable(props) {
   const handleSelectAllRows = (event) => {
     if (event.target.checked) {
       setSelectedRows(interviews.map((interview) => String(interview.id)));
-      setSelectedApplicantIds(interviews.map(interview => String(interview.applicant)))
+      setSelectedApplicantIds(
+        interviews.map((interview) => String(interview.applicant))
+      );
     } else {
       setSelectedRows([]);
       setSelectedApplicantIds([]);
     }
   };
-
-
 
   const handleDeleteRow = (interviewId) => {
     axios({
@@ -298,20 +322,22 @@ export default function InterviewTable(props) {
           {interviews ? (
             interviews
               .slice((currentPage - 1) * numOfApplicantsPerPage, getEndOfList())
-              .map((interview) => (
-                <InterviewRow
-                  interview={interview}
-                  panelNames={panelNames}
-                  interviewStatusChoices={interviewStatusChoices}
-                  selectedRows={selectedRows}
-                  setSelectedRows={setSelectedRows}
-                  selectedApplicantIds={selectedApplicantIds}
-                  setSelectedApplicantIds={setSelectedApplicantIds}
-                  key={interview.id}
-                  handleDeleteRow={handleDeleteRow}
-                  ws={ws}
-                />
-              ))
+              .map((interview) => {
+                return (
+                  <InterviewRow
+                    interview={interview}
+                    panelNames={panelNames}
+                    interviewStatusChoices={interviewStatusChoices}
+                    selectedRows={selectedRows}
+                    setSelectedRows={setSelectedRows}
+                    selectedApplicantIds={selectedApplicantIds}
+                    setSelectedApplicantIds={setSelectedApplicantIds}
+                    key={JSON.stringify(interview)}
+                    handleDeleteRow={handleDeleteRow}
+                    ws={ws}
+                  />
+                );
+              })
           ) : (
             <></>
           )}
