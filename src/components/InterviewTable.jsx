@@ -63,15 +63,18 @@ const useStyles = makeStyles({
   },
 });
 
+
 export default function InterviewTable(props) {
-  const [interviews, setInterviews] = useState(null);
   const { id, roundId } = useParams();
+  const ws = new WebSocket(`ws://localhost:8000/ws/interviews/${roundId}/`);
+  const [interviews, setInterviews] = useState(null);
   const panel = useSelector((state) => state.panel);
   const dispatch = useDispatch();
   const currentPage = useSelector((state) => state.paginator.currentPage);
   const searchParams = useSelector((state) => state.search.searchParams);
+  const isMaster = useSelector(state => state.user.isMaster)
   const numOfApplicantsPerPage = 5;
-  const reFetchInterviews = props.reFetchInterviews
+  const reFetchInterviews = props.reFetchInterviews;
   const filterCompleted = useSelector(
     (state) => state.interview.filterCompleted
   );
@@ -93,6 +96,25 @@ export default function InterviewTable(props) {
   const filterTopInterviews = useSelector(
     (state) => state.interview.filterTopInterviews
   );
+  useEffect(() => {
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        action: 'get_interviews',
+      }))
+    };
+    // ws.onmessage = (e) => {
+    //   const data = JSON.parse(e.data)
+    //   if(data.action_type === "updated_interview"){
+    //     const updatedInterview = data.data
+    //     let requiredInterview = interviews.find(interview => interview.id === updatedInterview.id)
+    //     requiredInterview = updatedInterview
+    //   }
+    //   console.log(data)
+    // }
+    return () => {
+      ws && ws.close()
+    }
+  }, [roundId, ]);
 
   const {
     createRoundBtnContainer,
@@ -167,12 +189,16 @@ export default function InterviewTable(props) {
               Math.floor((response.data.length * filterTopInterviews) / 100)
             )
       );
+      console.log(response.data)
       dispatch(currentPageChanged(1));
       dispatch(
         numOfPagesChanged(
-          filterTopInterviews === null ? 
-          Math.ceil(response.data.length / numOfApplicantsPerPage) : 
-          Math.ceil(Math.floor((response.data.length * filterTopInterviews) / 100) / numOfApplicantsPerPage)
+          filterTopInterviews === null
+            ? Math.ceil(response.data.length / numOfApplicantsPerPage)
+            : Math.ceil(
+                Math.floor((response.data.length * filterTopInterviews) / 100) /
+                  numOfApplicantsPerPage
+              )
         )
       );
     });
@@ -197,25 +223,20 @@ export default function InterviewTable(props) {
 
   const selectedRows = props.selectedRows;
   const setSelectedRows = props.setSelectedRows;
+  const selectedApplicantIds = props.selectedApplicantIds;
+  const setSelectedApplicantIds = props.setSelectedApplicantIds;
 
   const handleSelectAllRows = (event) => {
     if (event.target.checked) {
       setSelectedRows(interviews.map((interview) => String(interview.id)));
+      setSelectedApplicantIds(interviews.map(interview => String(interview.applicant)))
     } else {
       setSelectedRows([]);
+      setSelectedApplicantIds([]);
     }
   };
 
-  const handleSelectRow = (event) => {
-    if (event.target.checked) {
-      setSelectedRows((prevState) => [...prevState, event.target.value]);
-    } else {
-      setSelectedRows((prevState) =>
-        prevState.filter((applicantId) => applicantId !== event.target.value)
-      );
-    }
-    console.log(selectedRows);
-  };
+
 
   const handleDeleteRow = (interviewId) => {
     axios({
@@ -225,21 +246,21 @@ export default function InterviewTable(props) {
         Authorization: "Token " + localStorage.getItem("token"),
       },
     }).then((response) => {
-      setInterviews(prevState => 
-        prevState.filter(interview => interview.id !== interviewId)
-      )
+      setInterviews((prevState) =>
+        prevState.filter((interview) => interview.id !== interviewId)
+      );
       toast.success("Interview deleted successfully.", {
-          position: "bottom-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
     });
-  }
+  };
 
   return (
     <TableContainer sx={{ overflow: `scroll` }}>
@@ -283,9 +304,12 @@ export default function InterviewTable(props) {
                   panelNames={panelNames}
                   interviewStatusChoices={interviewStatusChoices}
                   selectedRows={selectedRows}
-                  handleSelectRow={handleSelectRow}
+                  setSelectedRows={setSelectedRows}
+                  selectedApplicantIds={selectedApplicantIds}
+                  setSelectedApplicantIds={setSelectedApplicantIds}
                   key={interview.id}
                   handleDeleteRow={handleDeleteRow}
+                  ws={ws}
                 />
               ))
           ) : (

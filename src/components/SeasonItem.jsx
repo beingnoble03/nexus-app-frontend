@@ -43,7 +43,7 @@ export default function SeasonItem(props) {
           <h5>{props.name}</h5>
           <p>{props.description}</p>
           <h6>
-            Role: {props.role} for {props.year} #{props.id}
+            Role: {props.role} for {props.year}
           </h6>
         </CardContent>
       </Card>

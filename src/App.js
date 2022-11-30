@@ -22,7 +22,7 @@ const useStyles = makeStyles({
   mainContainer: {
     flexGrow: 1,
     height: `100vh`,
-    overflow: "auto",
+    overflow: "hidden",
     position: "relative",
     display: "flex",
     flexDirection: "column",
@@ -30,6 +30,7 @@ const useStyles = makeStyles({
   content: {
     display: `flex`,
     height: `100%`,
+    overflow: `hidden`,
   },
 });
 

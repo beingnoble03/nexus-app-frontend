@@ -146,25 +146,43 @@ export default function InterviewRow(props) {
   };
 
   const handleSaveInterview = () => {
-    axios({
-      method: "patch",
-      url: `http://localhost:8000/api/interviews/${interview.id}/`,
-      headers: {
-        Authorization: "Token " + localStorage.getItem("token"),
-      },
+    props.ws.send(JSON.stringify({
+      action: 'update_interview',
       data: {
+        interview: interview.id,
         applicant: interview.applicant,
         completed: selectedStatus === "Completed",
         round: roundId,
         panel: selectedPanel === "None" ? null : selectedPanel,
         time_assigned: timeAssigned,
         time_entered: timeEntered,
-      },
-    }).then((response) => {
-      console.log(response.data);
-      setInterview(response.data);
-      setOpenEditModal(false);
-    });
+      }
+    }))
+    setOpenEditModal(false)
+    props.ws.onmessage = (e) => {
+      const data = JSON.parse(e.data)
+      if(data.action_type === "updated_interview" && interview.id === data.data["id"]){
+        setInterview(data.data)
+      }
+    }
+    // axios({
+    //   method: "patch",
+    //   url: `http://localhost:8000/api/interviews/${interview.id}/`,
+    //   headers: {
+    //     Authorization: "Token " + localStorage.getItem("token"),
+    //   },
+    //   data: {
+    //     applicant: interview.applicant,
+    //     completed: selectedStatus === "Completed",
+    //     round: roundId,
+    //     panel: selectedPanel === "None" ? null : selectedPanel,
+    //     time_assigned: timeAssigned,
+    //     time_entered: timeEntered,
+    //   },
+    // }).then((response) => {
+    //   setInterview(response.data);
+    //   setOpenEditModal(false);
+    // });
   };
 
   const handleSaveInterviewMarks = () => {
@@ -504,9 +522,6 @@ export default function InterviewRow(props) {
         Authorization: "Token " + localStorage.getItem("token"),
       },
       data: {
-        name: document.getElementById("details-applicant-name").value,
-        enrolment_number: document.getElementById("details-applicant-enrolment")
-          .value,
         mobile: document.getElementById("details-applicant-mobile").value,
         email: document.getElementById("details-applicant-email").value,
       },
