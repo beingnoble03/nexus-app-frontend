@@ -3,12 +3,19 @@ import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
 import axios from "axios";
 import {
+  Avatar,
   Button,
   Card,
   CardContent,
   Checkbox,
+  Chip,
   InputAdornment,
   MenuItem,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Divider,
 } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -20,6 +27,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import moment from "moment";
 import { toast } from "react-toastify";
+import SendIcon from "@mui/icons-material/Send";
 
 const style = {
   position: "absolute",
@@ -32,6 +40,8 @@ const style = {
   boxShadow: 24,
   p: 4,
   borderRadius: `10px`,
+  maxHeight: `90%`,
+  overflow: `scroll`,
 };
 
 const addApplicantStyle = {
@@ -93,16 +103,38 @@ const useStyles = makeStyles({
   sectionsContainer: {
     display: `flex`,
     flexGrow: 1,
+    flexDirection: `row`,
     width: `100%`,
-    padding: `15px`,
+    paddingTop: `20px`,
+    paddingBottom: `10px`,
+    gap: `15px`,
     flexWrap: `wrap`,
-    gap: `30px`,
-    overflow: `scroll`,
+    overflow: `hidden`,
   },
   saveQuestionBtnContainer: {
     display: `flex`,
     justifyContent: `flex-end`,
     marginTop: `15px`,
+  },
+  chatContainer: {
+    borderRadius: `5px`,
+    backgroundColor: `#e9f5f8`,
+    padding: `5px`,
+    marginTop: `5px`,
+    height: `250px`,
+    display: `flex`,
+    flexDirection: `column`,
+    overflow: `hidden`,
+  },
+  messagesContainer: {
+    overflow: `scroll`,
+    flexGrow: 1,
+  },
+  messageInputContainer: {
+    gap: `5px`,
+    display: `flex`,
+    padding: `5px`,
+    paddingTop: `10px`,
   },
 });
 
@@ -117,6 +149,9 @@ export default function InterviewRow(props) {
     card,
     sectionsContainer,
     saveQuestionBtnContainer,
+    chatContainer,
+    messagesContainer,
+    messageInputContainer,
   } = useStyles();
 
   const { id, roundId } = useParams();
@@ -129,8 +164,12 @@ export default function InterviewRow(props) {
   const [selectedPanel, setSelectedPanel] = useState("None");
   const [selectedStatus, setSelectedStatus] = useState("Completed");
   const [interviewScore, setInterviewScore] = useState(null);
+  const [messages, setMessages] = useState([])
+  const [currentUser, setCurrentUser] = useState(null)
+  const [messageWebsocket, setMessageWebsocket] = useState(null);
   const interviewStatusChoices = props.interviewStatusChoices;
   const panelNames = props.panelNames;
+  const [prevRemarks, setPrevRemarks] = useState([]);
 
   const handleEditInterview = () => {
     setOpenEditModal(true);
@@ -163,38 +202,38 @@ export default function InterviewRow(props) {
   };
 
   const handleSaveInterviewMarks = () => {
-    const scores = [];
-    console.log(interviewScore.interview_remarks);
-    interviewScore.round_details.sections.map((section, index) => {
-      scores.push({
-        section: section.id,
-        interview: interview.id,
-        obtained_marks: document.getElementById(
-          "input-marks-" + String(section.id)
-        ).value,
-      });
-    });
-    axios({
-      method: "post",
-      url: `http://localhost:8000/api/interviewMarks/`,
-      headers: {
-        Authorization: "Token " + localStorage.getItem("token"),
-      },
-      data: {
-        scores,
-      },
-    }).catch((response) => {
-      toast.error(response.message, {
-        position: "bottom-right",
-        autoClose: 4000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-    });
+    // const scores = [];
+    // console.log(interviewScore.interview_remarks);
+    // interviewScore.round_details.sections.map((section, index) => {
+    //   scores.push({
+    //     section: section.id,
+    //     interview: interview.id,
+    //     obtained_marks: document.getElementById(
+    //       "input-marks-" + String(section.id)
+    //     ).value,
+    //   });
+    // });
+    // axios({
+    //   method: "post",
+    //   url: `http://localhost:8000/api/interviewMarks/`,
+    //   headers: {
+    //     Authorization: "Token " + localStorage.getItem("token"),
+    //   },
+    //   data: {
+    //     scores,
+    //   },
+    // }).catch((response) => {
+    //   toast.error(response.message, {
+    //     position: "bottom-right",
+    //     autoClose: 4000,
+    //     hideProgressBar: false,
+    //     closeOnClick: true,
+    //     pauseOnHover: true,
+    //     draggable: true,
+    //     progress: undefined,
+    //     theme: "light",
+    //   });
+    // });
     axios({
       method: "patch",
       url: `http://localhost:8000/api/interviews/${interview.id}/`,
@@ -205,7 +244,7 @@ export default function InterviewRow(props) {
         remarks: document.getElementById("interview-remarks").value,
       },
     }).then((response) => {
-      toast.success("Interview Remarks & Marks Saved.", {
+      toast.success("Interview Remarks Saved.", {
         position: "bottom-right",
         autoClose: 4000,
         hideProgressBar: false,
@@ -234,19 +273,110 @@ export default function InterviewRow(props) {
     console.log(interview);
   }, [openEditModal]);
 
+  console.log(messageWebsocket)
+
+  const handleViewMarks = () => {
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/remarks/?applicant_id=${interview.applicant_details.id}`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    })
+      .then((response) => {
+        console.log(response.data)
+        setPrevRemarks(response.data)
+      })
+    axios({
+      method: "get",
+      url: `http://localhost:8000/api/interviewMarks?applicant_id=${interview.applicant_details.id}&round_id=${roundId}`,
+      headers: {
+        Authorization: "Token " + localStorage.getItem("token"),
+      },
+    })
+      .then((response) => {
+        console.log(response.data);
+        setInterviewScore(response.data);
+        setOpenScoreModal(true);
+        axios({
+          method: "get",
+          url: `http://localhost:8000/api/interviews/${interview.id}/messages/`,
+          headers: {
+            Authorization: "Token " + localStorage.getItem("token"),
+          },
+        })
+          .then((response) => {
+            console.log(response.data);
+            setMessages(response.data);
+          })
+          axios({
+            method: "get",
+            url: `http://localhost:8000/api/current_user/`,
+            headers: {
+              Authorization: "Token " + localStorage.getItem("token"),
+            },
+          })
+            .then((response) => {
+              setCurrentUser(response.data[0]);
+              const newMessageWebsocket = new WebSocket(`ws://localhost:8000/ws/messages/${String(interview.id)}/`)
+              newMessageWebsocket.onmessage = e => {
+                const data = JSON.parse(e.data)
+                if (data.action_type === "new_message"){
+                  addNewMessage(data.data)
+                }
+              }
+              setMessageWebsocket(newMessageWebsocket)
+          })
+      })
+      .catch((response) => {
+        let errorTitle = "No sections available for this interview.";
+        if (response.response.status === 403) {
+          errorTitle = "You are not permitted to view interview marks.";
+        }
+        toast.error(errorTitle, {
+          position: "bottom-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+      });
+  };
+
+
+
+  const handleSendMessage = () => {
+    messageWebsocket.send(
+      JSON.stringify({
+        action: "create_message",
+        data: {
+          interview: interview.id,
+          message: document.getElementById("message-input").value,
+          user_id: currentUser.id,
+        },
+      })
+    )
+    document.getElementById("message-input").value = ""
+  }
+
+  const handleCloseScoreModal = () => {
+    messageWebsocket.close()
+    setOpenScoreModal(false)
+  }
+
   const scoreModal = (
     <Modal
       open={openScoreModal}
-      onClose={() => setOpenScoreModal(false)}
+      onClose={handleCloseScoreModal}
       aria-labelledby="modal-modal-title"
       aria-describedby="modal-modal-description"
-      sx={{
-        maxHeight: `100%`,
-      }}
     >
       <Box sx={style}>
         <Typography id="modal-modal-title" variant="h5" component="h2">
-          <b>Sections</b>{" "}
+          <b>Remarks</b>{" "}
           {interviewScore && interviewScore.round_details.round_name}
         </Typography>
         <div className={applicantDetialsContainer}>
@@ -266,7 +396,7 @@ export default function InterviewRow(props) {
             variant="outlined"
             size="small"
             sx={{
-              width: `300px`,
+              width: `100%`,
               margin: `10px 0px`,
             }}
             InputProps={{
@@ -285,7 +415,7 @@ export default function InterviewRow(props) {
         </div>
 
         <div className={sectionsContainer}>
-          {interviewScore &&
+          {/* {interviewScore &&
             interviewScore.round_details.sections.map((section, index) => (
               <Card className={card} key={index}>
                 <CardContent>
@@ -335,7 +465,91 @@ export default function InterviewRow(props) {
                   />
                 </CardContent>
               </Card>
-            ))}
+            ))} */}
+          <Box
+            sx={{
+              flexGrow: 1,
+              minWidth: `200px`,
+              overflow: `scroll`,
+            }}
+          >
+            <Typography variant="h6">Previous Remarks</Typography>
+            <Box className={chatContainer} sx={{
+              overflow: `scroll`,
+            }}>
+                <List sx={{ width: "100%", marginTop: `-10px` }}>
+                  {prevRemarks.questions && prevRemarks.questions.map((question, index) => {
+                    return (
+                      <ListItem key={`${String(question.id)}-${String(interview.applicant_details.id)}`}>
+                        <ListItemText
+                          primary={`Q ${question.title} [${question.test_title + " - " + question.round_name}]`}
+                          secondary={`Remarks- ${question.remarks} [Marks obtained- ${question.obtained_marks} & Maximum Marks- ${question.maximum_marks}]`}
+                        />
+                      </ListItem>
+                    )
+                  })}
+                  {prevRemarks.interviews && prevRemarks.interviews.map((interviewItem, index) => {
+                    if (interviewItem.remarks){
+                      return (
+                        <ListItem key={`${String(interviewItem.id)}`}>
+                          <ListItemText
+                            primary={interviewItem.title}
+                            secondary={`Remarks- ${interviewItem.remarks}`}
+                          />
+                        </ListItem>
+                      )
+                    }
+                  })}
+                </List>
+            </Box>
+          </Box>
+          <Box
+            sx={{
+              flexGrow: 1,
+              minWidth: `200px`,
+              overflow: `hidden`,
+            }}
+          >
+            <Typography variant="h6">Chat</Typography>
+            <Box className={chatContainer}>
+              <Box className={messagesContainer}>
+                <List sx={{ width: "100%", marginTop: `-10px` }}>
+                  {messages && messages.map((message, index) => {
+                    return (
+                      <ListItem key={String(message.id)}>
+                        <ListItemAvatar>
+                          <Avatar alt={message.author_name} src={message.author_image} />
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={message.author_name}
+                          secondary={message.message}
+                        />
+                      </ListItem>
+                      )
+                  })}
+                </List>
+              </Box>
+              <Box className={messageInputContainer}>
+                <TextField
+                  variant="outlined"
+                  color="primary"
+                  id="message-input"
+                  label="Type your message"
+                  size="small"
+                  sx={{
+                    flexGrow: 1,
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  endIcon={<SendIcon />}
+                  size="small"
+                  onClick={handleSendMessage}
+                >
+                </Button>
+              </Box>
+            </Box>
+          </Box>
         </div>
         <div className={createRoundBtnContainer}>
           <Button
@@ -349,36 +563,9 @@ export default function InterviewRow(props) {
     </Modal>
   );
 
-  const handleViewMarks = () => {
-    axios({
-      method: "get",
-      url: `http://localhost:8000/api/interviewMarks?applicant_id=${interview.applicant_details.id}&round_id=${roundId}`,
-      headers: {
-        Authorization: "Token " + localStorage.getItem("token"),
-      },
-    })
-      .then((response) => {
-        console.log(response.data);
-        setInterviewScore(response.data);
-        setOpenScoreModal(true);
-      })
-      .catch((response) => {
-        let errorTitle = "No sections available for this interview.";
-        if (response.response.status === 403) {
-          errorTitle = "You are not permitted to view interview marks.";
-        }
-        toast.error(errorTitle, {
-          position: "bottom-right",
-          autoClose: 4000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-      });
-  };
+  const addNewMessage = (data) => {
+    setMessages(prevState => [data, ...prevState])
+  }
 
   const editInterviewModal = (
     <Modal

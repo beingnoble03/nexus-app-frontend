@@ -137,9 +137,6 @@ export default function InterviewTable(props) {
     });
   };
 
-  useEffect(() => {
-    console.log(interviews, "hello");
-  }, [interviews]);
 
   const {
     createRoundBtnContainer,
