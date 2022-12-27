@@ -14,6 +14,7 @@ import Panels from "./containers/Panels";
 import Interview from "./containers/Interview";
 import Test from "./containers/Test";
 import CreditsFooter from "./components/CreditsFooter";
+import { createTheme, ThemeProvider } from "@mui/material";
 
 const useStyles = makeStyles({
   root: {
@@ -37,8 +38,17 @@ const useStyles = makeStyles({
 function App() {
   const classes = useStyles();
   const { root, mainContainer, content } = classes;
+  const theme = createTheme({
+    typography: {
+      fontFamily: [
+        'Hanken Grotesk',
+        'cursive',
+      ].join(','),
+    }
+  })
 
   return (
+      <ThemeProvider theme={theme}>
       <BrowserRouter>
       <div className={root}>
         <AppDrawer />
@@ -61,6 +71,7 @@ function App() {
         </div>
       </div>
       </BrowserRouter>
+      </ThemeProvider>
   );
 }
 
