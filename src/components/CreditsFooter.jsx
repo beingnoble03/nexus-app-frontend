@@ -17,10 +17,10 @@ export default function CreditsFooter() {
   return (
     <Box sx={style}>
         <Typography variant="subtitle1">
-            {"Made with 🤍 by "} <a href="https://github.com/beingnoble03" style={{
+            {"による🤍で作られました"} <a href="https://github.com/beingnoble03" style={{
                 textDecoration: `none`,
                 color: `white`,
-            }}><b>Noble Mittal</b></a>
+            }}><u>beingnoble03</u></a>
         </Typography>
     </Box>
   )
