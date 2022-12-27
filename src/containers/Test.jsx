@@ -182,16 +182,16 @@ export default function Test(props) {
           <Button
             color="primary"
             variant="outlined"
-            onClick={handleCreateButton}
+            onClick={handleAbortButton}
           >
-            Create
+            Abort
           </Button>
           <Button
             color="primary"
             variant="contained"
-            onClick={handleAbortButton}
+            onClick={handleCreateButton}
           >
-            Abort
+            Create
           </Button>
         </Box>
       </Box>
