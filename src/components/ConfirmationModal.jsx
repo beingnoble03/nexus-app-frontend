@@ -108,16 +108,16 @@ export default function ConfirmationModal(props) {
           <Button
             color="primary"
             variant="outlined"
-            onClick={handleConfirmButton}
+            onClick={handleAbortButton}
           >
-            Confirm
+            Abort
           </Button>
           <Button
             color="primary"
             variant="contained"
-            onClick={handleAbortButton}
+            onClick={handleConfirmButton}
           >
-            Abort
+            Confirm
           </Button>
         </Box>
       </Box>
