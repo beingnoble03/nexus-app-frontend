@@ -331,7 +331,7 @@ export default function InterviewRow(props) {
       .catch((response) => {
         let errorTitle = "No sections available for this interview.";
         if (response.response.status === 403) {
-          errorTitle = "You are not permitted to view interview marks.";
+          errorTitle = "You are not permitted to view discussion menu.";
         }
         toast.error(errorTitle, {
           position: "bottom-right",
@@ -376,7 +376,7 @@ export default function InterviewRow(props) {
     >
       <Box sx={style}>
         <Typography id="modal-modal-title" variant="h5" component="h2">
-          <b>Remarks</b>{" "}
+          <b>Discuss</b>{" "}
           {interviewScore && interviewScore.round_details.round_name}
         </Typography>
         <div className={applicantDetialsContainer}>
@@ -843,7 +843,7 @@ export default function InterviewRow(props) {
           <Button onClick={handleEditInterview}>Edit</Button>
         </TableCell>
         <TableCell align="center">
-          <Button onClick={handleViewMarks}>Marks</Button>
+          <Button onClick={handleViewMarks}>Discuss</Button>
         </TableCell>
       </TableRow>
       {editInterviewModal}

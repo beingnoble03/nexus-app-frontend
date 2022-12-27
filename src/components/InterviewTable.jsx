@@ -312,7 +312,7 @@ export default function InterviewTable(props) {
             <TableCell align="center">Time Assigned</TableCell>
             <TableCell align="center">Time Entered</TableCell>
             <TableCell align="center">Edit</TableCell>
-            <TableCell align="center">Marks</TableCell>
+            <TableCell align="center">Discuss</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
