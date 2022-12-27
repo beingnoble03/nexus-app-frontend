@@ -112,9 +112,9 @@ export default function AppHeader() {
           sx={{
             marginLeft: `10px`,
             marginRight: `10px`,
-            background: `linear-gradient(to right, rgba(218,111,158,1) 0%, rgba(25,118,210,1) 100%)`,
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: `transparent`,
+            // background: `linear-gradient(to right, rgba(218,111,158,1) 0%, rgba(25,118,210,1) 100%)`,
+            // WebkitBackgroundClip: "text",
+            // WebkitTextFillColor: `transparent`,
           }}
         >
           <b>{title}</b>
